@@ -1,0 +1,101 @@
+/* Careers Page */
+.careers-container { max-width: 1200px; margin: 0 auto; padding: 2rem 1rem; }
+
+/* Header */
+.careers-header { text-align: center; margin-bottom: 2.5rem; }
+.careers-header h1 { color: var(--secondary-color); margin-bottom: 0.5rem; }
+.careers-header .subtitle { color: var(--dark-gray); max-width: 700px; margin: 0 auto; }
+
+/* Filters */
+.career-filters { display: flex; gap: 1.5rem; margin-bottom: 2rem; flex-wrap: wrap; }
+.career-filters .form-group { flex: 1; min-width: 250px; margin: 0; }
+
+/* Careers Grid */
+.careers-grid { 
+  display: grid; 
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); 
+  gap: 1.5rem; 
+  margin-bottom: 3rem; 
+}
+
+/* Career Card */
+.career-card {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: var(--box-shadow);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  border: 1px solid #eee;
+}
+
+.career-card:hover { 
+  transform: translateY(-5px); 
+  box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+  border-color: var(--primary-color);
+}
+
+.career-card.selected {
+  border: 2px solid var(--primary-color);
+  background-color: #f8fafc;
+}
+
+.career-meta { 
+  display: flex; 
+  justify-content: space-between; 
+  margin: 0.75rem 0;
+  font-size: 0.9rem;
+}
+
+.salary { color: var(--success-color); font-weight: 600; }
+
+.demand {
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.demand.high { background-color: #d4edda; color: #155724; }
+.demand.medium { background-color: #fff3cd; color: #856404; }
+.demand.low { background-color: #f8d7da; color: #721c24; }
+
+/* Skills */
+.skills { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 1rem 0; }
+.skill-tag {
+  background-color: #e9ecef;
+  color: #495057;
+  padding: 0.25rem 0.75rem;
+  border-radius: 15px;
+  font-size: 0.8rem;
+}
+
+/* Career Details */
+.career-details {
+  background: white;
+  border-radius: 8px;
+  padding: 2rem;
+  margin-top: 2rem;
+  box-shadow: var(--box-shadow);
+}
+
+.details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.detail-card {
+  background: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 6px;
+  text-align: center;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .careers-grid { grid-template-columns: 1fr; }
+  .details-grid { grid-template-columns: 1fr; }
+}
