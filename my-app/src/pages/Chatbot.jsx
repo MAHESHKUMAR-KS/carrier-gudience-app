@@ -1,0 +1,91 @@
+import React, { useState, useRef, useEffect } from 'react';
+
+function Chatbot() {
+  const [messages, setMessages] = useState([
+    { id: 1, text: 'Hello! How can I help you with your career or education today?', sender: 'bot' }
+  ]);
+  const [input, setInput] = useState('');
+  const messagesEndRef = useRef(null);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!input.trim()) return;
+
+    // Add user message
+    const userMessage = { id: Date.now(), text: input, sender: 'user' };
+    setMessages(prev => [...prev, userMessage]);
+    setInput('');
+
+    // Simulate bot response
+    setTimeout(() => {
+      const botResponses = [
+        'I see. Can you tell me more about your interests?',
+        'That\'s interesting! What career paths are you considering?',
+        'I can help you explore different career options based on your skills.',
+        'Have you thought about what subjects you enjoy the most?',
+        'I can provide information about colleges that match your interests.'
+      ];
+      const botMessage = {
+        id: Date.now() + 1,
+        text: botResponses[Math.floor(Math.random() * botResponses.length)],
+        sender: 'bot'
+      };
+      setMessages(prev => [...prev, botMessage]);
+    }, 1000);
+  };
+
+  // Auto-scroll to bottom of messages
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  return (
+    <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <h1 className="text-3xl font-bold mb-6">Career Guidance Assistant</h1>
+      
+      <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+        {/* Chat messages */}
+        <div className="h-96 overflow-y-auto p-4 space-y-4">
+          {messages.map((message) => (
+            <div
+              key={message.id}
+              className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+            >
+              <div
+                className={`max-w-xs md:max-w-md lg:max-w-lg xl:max-w-xl rounded-lg px-4 py-2 ${
+                  message.sender === 'user'
+                    ? 'bg-indigo-600 text-white rounded-br-none'
+                    : 'bg-gray-100 text-gray-800 rounded-bl-none'
+                }`}
+              >
+                {message.text}
+              </div>
+            </div>
+          ))}
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Input area */}
+        <form onSubmit={handleSubmit} className="border-t border-gray-200 p-4">
+          <div className="flex space-x-2">
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              placeholder="Type your message..."
+            />
+            <button
+              type="submit"
+              className="bg-indigo-600 text-white px-6 py-2 rounded-full hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            >
+              Send
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+export default Chatbot;

@@ -1,93 +1,72 @@
-
-import React, { useState } from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { Login, Signup } from './components/Auth';
-import './components/Auth.css';
+import { AuthProvider } from './contexts/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
-import Careers from './components/Careers';
-import CollegeRecommendation from './components/CollegeRecommendation';
-import Home from './components/Home';
-import StudentProfile from './components/StudentProfile';
-import Chatbot from './components/Chatbot';
-import './App.css';
+import Home from './pages/Home';
+import Careers from './pages/Careers';
+import CollegeRecommendation from './pages/CollegeRecommendation';
+import StudentProfile from './pages/StudentProfile';
+import Chatbot from './pages/Chatbot';
+import Login from './pages/Login';
+import Signup from './pages/Signup';
 
 function App() {
-  const [mode, setMode] = useState('login');
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userData, setUserData] = useState(null);
-
-  const handleLogin = (user) => {
-    setIsLoggedIn(true);
-    setUserData(user);
-  };
-
-  const handleLogout = () => {
-    setIsLoggedIn(false);
-    setUserData(null);
-  };
-
-  // Protected Route Component
-  const ProtectedRoute = ({ children }) => {
-    if (!isLoggedIn) {
-      return <Navigate to="/login" replace />;
-    }
-    return children;
-  };
-
-  // Auth Pages
-  const AuthPages = () => (
-    <div className="auth-container">
-      {mode === 'login' ? (
-        <Login 
-          onLogin={(val) => val === 'signup' ? setMode('signup') : handleLogin(val)} 
-        />
-      ) : (
-        <Signup 
-          onSignup={(val) => val === 'login' ? setMode('login') : handleLogin(val)} 
-        />
-      )}
-    </div>
-  );
-
-  // Main App with Routes
-  const AppRoutes = () => (
+  return (
     <Router>
-      <Navbar isLoggedIn={isLoggedIn} onLogout={handleLogout} />
-      <main className="main-content">
-        <Routes>
-          <Route path="/" element={
-            <ProtectedRoute>
-              <Home userData={userData} />
-            </ProtectedRoute>
-          } />
-          <Route path="/profile" element={
-            <ProtectedRoute>
-              <StudentProfile userData={userData} onUpdate={setUserData} />
-            </ProtectedRoute>
-          } />
-          <Route path="/colleges" element={
-            <ProtectedRoute>
-              <CollegeRecommendation userData={userData} />
-            </ProtectedRoute>
-          } />
-          <Route path="/careers" element={
-            <ProtectedRoute>
-              <Careers />
-            </ProtectedRoute>
-          } />
-          <Route path="/chat" element={
-            <ProtectedRoute>
-              <Chatbot />
-            </ProtectedRoute>
-          } />
-          <Route path="/login" element={<AuthPages />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </main>
+      <div className="min-h-screen bg-white">
+        <Navbar />
+        <main className="pt-16">
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+            
+            {/* Protected Routes */}
+            <Route path="/" element={
+              <ProtectedRoute>
+                <Home />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/careers" element={
+              <ProtectedRoute>
+                <Careers />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/college-recommendation" element={
+              <ProtectedRoute>
+                <CollegeRecommendation />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <StudentProfile />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/chatbot" element={
+              <ProtectedRoute>
+                <Chatbot />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="*" element={
+              <Navigate to="/" replace />
+            } />
+          </Routes>
+        </main>
+      </div>
     </Router>
   );
-
-  return isLoggedIn ? <AppRoutes /> : <AuthPages />;
 }
 
-export default App;
+// Wrap the App with AuthProvider
+const AppWithAuth = () => (
+  <AuthProvider>
+    <App />
+  </AuthProvider>
+);
+
+export default AppWithAuth;

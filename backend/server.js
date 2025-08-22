@@ -4,13 +4,20 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import morgan from 'morgan';
 import careerRouter from './routes/careerRoutes.js';
 import chatbotRouter from './chatbot.js';
+import authRouter from './routes/authRoutes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+
+// Development logging
+if (process.env.NODE_ENV === 'development') {
+  app.use(morgan('dev'));
+}
 
 // ---------- Middleware ----------
 const corsOptions = {
@@ -23,7 +30,16 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
-app.use(express.json());
+
+// Body parser, reading data from body into req.body
+app.use(express.json({ limit: '10kb' }));
+app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+
+// Test middleware
+app.use((req, res, next) => {
+  req.requestTime = new Date().toISOString();
+  next();
+});
 
 // ---------- MongoDB Connection ----------
 mongoose.connect(process.env.MONGO_URI)
@@ -31,8 +47,9 @@ mongoose.connect(process.env.MONGO_URI)
   .catch((err) => console.error('MongoDB connection error:', err));
 
 // ---------- API Routes ----------
-app.use('/api/careers', careerRouter);
-app.use('/api/chat', chatbotRouter);
+app.use('/api/v1/auth', authRouter);
+app.use('/api/v1/careers', careerRouter);
+app.use('/api/v1/chatbot', chatbotRouter);
 
 // Health check
 app.get('/api/health', (req, res) => {
