@@ -33,34 +33,25 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (email, password) => {
-    try {
-      const data = await authAPI.login(email, password);
-      setUser(data.data.user);
-      return { success: true };
-    } catch (error) {
-      return { 
-        success: false, 
-        message: error.response?.data?.message || 'Login failed. Please try again.' 
-      };
+    const result = await authAPI.login(email, password);
+    if (result.success) {
+      setUser(authAPI.getCurrentUser());
     }
+    return result;
   };
 
   const signup = async (userData) => {
-    try {
-      const data = await authAPI.signup(userData);
-      setUser(data.data.user);
-      return { success: true };
-    } catch (error) {
-      return { 
-        success: false, 
-        message: error.response?.data?.message || 'Signup failed. Please try again.' 
-      };
+    const result = await authAPI.signup(userData);
+    if (result.success) {
+      setUser(authAPI.getCurrentUser());
     }
+    return result;
   };
 
   const logout = () => {
     authAPI.logout();
     setUser(null);
+    return { success: true };
   };
 
   return (
