@@ -1,10 +1,21 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import './Home.css';
+import PillNav from './PillNav.jsx';
 
 const Home = ({ userData }) => {
+  const [activeNav, setActiveNav] = useState('home');
+  
+  const navItems = [
+    { id: '', label: 'Home' },
+    { id: 'college-recommendation', label: 'Colleges' },
+    { id: 'careers', label: 'Careers' },
+    { id: 'profile', label: 'My Profile' },
+  ];
+
   return (
     <div className="home-container">
+
       <h1>Welcome to Career Guidance App</h1>
       {userData && <h2>Hello, {userData.name || 'Student'}!</h2>}
       
