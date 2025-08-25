@@ -8,6 +8,7 @@ import morgan from 'morgan';
 import careerRouter from './routes/careerRoutes.js';
 import chatbotRouter from './chatbot.js';
 import authRouter from './routes/authRoutes.js';
+import collegeRouter from './routes/collegeRoutes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -48,6 +49,7 @@ mongoose.connect(process.env.MONGO_URI)
 
 // ---------- API Routes ----------
 app.use('/api/v1/auth', authRouter);
+app.use('/api/v1/colleges', collegeRouter);
 app.use('/api/v1/careers', careerRouter);
 app.use('/api/v1/chatbot', chatbotRouter);
 
