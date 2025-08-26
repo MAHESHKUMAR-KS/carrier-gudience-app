@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { Link } from "react-router-dom";
-import { FiSearch, FiMapPin, FiChevronDown, FiFilter, FiStar, FiCheck, FiX, FiChevronRight } from "react-icons/fi";
-import { FaRupeeSign, FaGraduationCap, FaSchool } from "react-icons/fa";
+import React, { useState } from "react";
+import { FiSearch, FiMapPin, FiChevronDown, FiStar, FiChevronRight } from "react-icons/fi";
+import { FaRupeeSign, FaGraduationCap } from "react-icons/fa";
 
 const STREAM_SUBJECTS = {
   Engineering: ["Physics", "Chemistry", "Maths"],
@@ -22,6 +21,7 @@ export default function CollegeRecommendation() {
   const [searching, setSearching] = useState(false);
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [sortBy, setSortBy] = useState("relevance");
   
   const communities = [
     { value: 'oc', label: 'OC (Open Category)' },
@@ -38,334 +38,17 @@ export default function CollegeRecommendation() {
     { value: 'mtech', label: 'M.Tech' },
     { value: 'mba', label: 'MBA' }
   ];
-  
-  const ownershipTypes = [
-    { id: 'govt', label: 'Government' },
-    { id: 'private', label: 'Private' },
-    { id: 'deemed', label: 'Deemed University' },
-    { id: 'autonomous', label: 'Autonomous' }
-  ];
-  
-  const specializations = [
-    'Computer Science', 'Mechanical', 'Civil',
-    'Electronics', 'Electrical', 'Aerospace',
-    'Biotechnology', 'Chemical', 'AI & ML'
-  ];
-
-  useEffect(() => {
-    // Load initial data if needed
-    if (formData.location) {
-      // TODO: Load colleges based on location
-    }
-  }, [formData.location]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
-      [name]: value,
-      ...(name === "stream" && { marks: {} }),
+      [name]: value
     }));
   };
 
-  const handleMarksChange = (subject, value) => {
-    setFormData(prev => {
-      // Ensure marks exists and is an object
-      const currentMarks = prev.marks || {};
-      
-      // Only update if the value is a valid number between 0-100 or empty string
-      const newValue = (value === '' || (Number(value) >= 0 && Number(value) <= 100)) ? value : currentMarks[subject] || '';
-      
-      return {
-        ...prev,
-        marks: {
-          ...currentMarks,
-          [subject]: newValue
-        }
-      };
-    });
-  };
-
-  const FinancialBadge = ({ score }) => {
-    let colorClass = "";
-    let label = "";
-
-    if (score >= 8) {
-      colorClass = "bg-green-100 text-green-800";
-      label = "Stable";
-    } else if (score >= 5) {
-      colorClass = "bg-yellow-100 text-yellow-800";
-      label = "Moderate";
-    } else {
-      colorClass = "bg-red-100 text-red-800";
-      label = "Limited";
-    }
-
-    return (
-      <span
-        className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${colorClass}`}
-      >
-        {label} • {score}/10
-      </span>
-    );
-  };
-
-  // 🔹 Mock Data with Financial Score + Sorting
-  const searchColleges = useCallback(async () => {
-    if (!formData.location) {
-      setError('Please enter a location to search for colleges');
-      return [];
-    }
-    
-    // If we have cutoff data, search by cutoff first
-    if (formData.twelfthMarks) {
-      try {
-        const response = await fetch(`http://localhost:5001/api/v1/college-cutoffs/search?location=${encodeURIComponent(formData.location)}&course=${formData.course}&community=${formData.community}&marks=${formData.twelfthMarks}`);
-        const data = await response.json();
-        
-        if (data.status === 'success' && data.data?.length > 0) {
-          return data.data.map(college => ({
-            ...college,
-            name: college.collegeName,
-            courses: [formData.course.toUpperCase()],
-            matchScore: 100 - ((college.difference / 100) * 100), // Calculate match score based on cutoff difference
-            financialDetails: {
-              annualRevenue: 100 + Math.floor(Math.random() * 100),
-              fundingSources: ["Private Trust", "Student Fees"],
-              score: 7 + Math.floor(Math.random() * 3),
-            },
-            fees: { 
-              min: 50000 + Math.floor(Math.random() * 100000), 
-              max: 150000 + Math.floor(Math.random() * 200000), 
-              currency: "INR" 
-            },
-            rating: (Math.random() * 2 + 3).toFixed(1)
-          }));
-        }
-      } catch (err) {
-        console.error('Error searching by cutoff:', err);
-        // Fall through to regular search if cutoff search fails
-      }
-    }
-
-    setSearching(true);
-    setError('');
-    
-    try {
-      const response = await fetch('http://localhost:5001/api/v1/colleges/search', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          location: formData.location
-        })
-      });
-      
-      const data = await response.json();
-      
-      if (!response.ok || data.status !== 'success') {
-        console.error('API Error:', data);
-        throw new Error(data.message || 'Failed to fetch colleges. Please try again.');
-      }
-
-      if (!data.data?.colleges?.length) {
-        console.warn('No colleges found for location:', formData.location);
-        return [];
-      }
-
-      // Transform API data to match our frontend format
-      return data.data.colleges.map((college, index) => ({
-        id: college.place_id || `college-${index}`,
-        name: college.name || 'Unknown College',
-        location: college.address || formData.location,
-        courses: [
-          `B.Sc in ${formData.stream}`,
-          `B.Tech in ${formData.stream}`,
-          `B.A. in ${formData.stream}`
-        ],
-        matchScore: Math.floor(Math.random() * 30) + 70,
-        cutoff: 70 + Math.floor(Math.random() * 30),
-        financialDetails: {
-          annualRevenue: 100 + Math.floor(Math.random() * 100),
-          fundingSources: ["Private Trust", "Student Fees"],
-          score: 7 + Math.floor(Math.random() * 3),
-        },
-        fees: { 
-          min: 50000 + Math.floor(Math.random() * 100000), 
-          max: 150000 + Math.floor(Math.random() * 200000), 
-          currency: "INR" 
-        },
-        rating: college.rating || (Math.random() * 2 + 3).toFixed(1),
-        placeId: college.place_id,
-        coordinates: college.location
-      }));
-    } catch (err) {
-      console.error('Error searching colleges:', err);
-      setError('Failed to fetch colleges. Please try again later.');
-      return [];
-    } finally {
-      setSearching(false);
-    }
-  }, [formData.location, formData.stream]);
-
-  const validateForm = () => {
-    if (!formData.twelfthMarks || isNaN(formData.twelfthMarks) || formData.twelfthMarks < 0 || formData.twelfthMarks > 100) {
-      setError("Please enter a valid 12th standard percentage (0-100)");
-      return false;
-    }
-    
-    const subjectMarks = Object.values(formData.marks);
-    if (subjectMarks.length !== STREAM_SUBJECTS[formData.stream].length) {
-      setError("Please enter marks for all subjects");
-      return false;
-    }
-    
-    const invalidMarks = subjectMarks.some(mark => 
-      mark === "" || isNaN(mark) || mark < 0 || mark > 100
-    );
-    
-    if (invalidMarks) {
-      setError("Please enter valid marks (0-100) for all subjects");
-      return false;
-    }
-    
-    return true;
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!validateForm()) return;
-    
-    setLoading(true);
-    setError("");
-    setResults([]); // Clear previous results
-    
-    try {
-      const colleges = await searchColleges();
-      if (colleges.length === 0) {
-        setError('No colleges found for the specified location. Try a different location.');
-      } else {
-        setResults(colleges);
-      }
-    } catch (err) {
-      console.error('Search error:', err);
-      setError(err.message || 'Failed to fetch colleges. Please check your connection and try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Add more college options with different locations and community cutoffs
-  const allColleges = [
-    {
-      id: 1,
-      name: `${formData.stream} College of Excellence`,
-      location: formData.location || 'Major City',
-      courses: [
-        `B.Sc in ${formData.stream}`, 
-        `B.Tech in ${formData.stream}`, 
-        `B.A. in ${formData.stream}`,
-        'BBA',
-        'BCA'
-      ],
-      matchScore: Math.floor(Math.random() * 30) + 70,
-      cutoffDetails: {
-        general: 90 + Math.floor(Math.random() * 5),
-        obc: 85 + Math.floor(Math.random() * 5),
-        sc: 80 + Math.floor(Math.random() * 5),
-        st: 75 + Math.floor(Math.random() * 5),
-        ews: 88 + Math.floor(Math.random() * 5)
-      },
-      financialDetails: {
-        annualRevenue: 100 + Math.floor(Math.random() * 100),
-        fundingSources: ["Private Trust", "Student Fees"],
-        score: 8 + Math.floor(Math.random() * 3),
-      },
-      fees: { min: 50000, max: 150000, currency: "INR" },
-      rating: (Math.random() * 2 + 3).toFixed(1),
-    },
-    {
-      id: 2,
-      name: "National Institute of Technology",
-      location: formData.location || "State Capital",
-      courses: ["B.Tech", "M.Tech", "Ph.D", "B.Arch", "M.Sc"],
-      matchScore: Math.floor(Math.random() * 20) + 60,
-      cutoffDetails: {
-        general: 95 + Math.floor(Math.random() * 5),
-        obc: 90 + Math.floor(Math.random() * 5),
-        sc: 85 + Math.floor(Math.random() * 5),
-        st: 80 + Math.floor(Math.random() * 5),
-        ews: 92 + Math.floor(Math.random() * 5)
-      },
-      financialDetails: {
-        annualRevenue: 200 + Math.floor(Math.random() * 100),
-        fundingSources: ["Government", "Research Grants", "Fees"],
-        score: 9 + Math.floor(Math.random() * 2),
-      },
-      fees: { min: 100000, max: 250000, currency: "INR" },
-      rating: (Math.random() * 1.5 + 3.5).toFixed(1),
-    },
-    {
-      id: 3,
-      name: `${formData.stream} University`,
-      location: 'Bangalore',
-      courses: [
-        `B.Sc in ${formData.stream}`, 
-        `M.Sc in ${formData.stream}`,
-        'BCA',
-        'BBA',
-        'B.Com',
-        'BA'
-      ],
-      matchScore: Math.floor(Math.random() * 25) + 65,
-      cutoffDetails: {
-        general: 85 + Math.floor(Math.random() * 5),
-        obc: 80 + Math.floor(Math.random() * 5),
-        sc: 75 + Math.floor(Math.random() * 5),
-        st: 70 + Math.floor(Math.random() * 5),
-        ews: 82 + Math.floor(Math.random() * 5)
-      },
-      financialDetails: {
-        annualRevenue: 150 + Math.floor(Math.random() * 100),
-        fundingSources: ["Private", "Grants"],
-        score: 8 + Math.floor(Math.random() * 2),
-      },
-      fees: { min: 60000, max: 180000, currency: "INR" },
-      rating: (Math.random() * 1.8 + 3.2).toFixed(1),
-    },
-    {
-      id: 4,
-      name: `Metro ${formData.stream} College`,
-      location: 'Delhi',
-      courses: [
-        `B.A. in ${formData.stream}`, 
-        `M.A. in ${formData.stream}`,
-        'BBA',
-        'B.Com',
-        'BMS'
-      ],
-      matchScore: Math.floor(Math.random() * 20) + 60,
-      cutoffDetails: {
-        general: 80 + Math.floor(Math.random() * 5),
-        obc: 75 + Math.floor(Math.random() * 5),
-        sc: 70 + Math.floor(Math.random() * 5),
-        st: 65 + Math.floor(Math.random() * 5),
-        ews: 78 + Math.floor(Math.random() * 5)
-      },
-      financialDetails: {
-        annualRevenue: 120 + Math.floor(Math.random() * 80),
-        fundingSources: ["Government Aided", "Fees"],
-        score: 7 + Math.floor(Math.random() * 2),
-      },
-      fees: { min: 40000, max: 120000, currency: "INR" },
-      rating: (Math.random() * 1.6 + 3.0).toFixed(1),
-    }
-  ];
-
   const handleSearch = async (e) => {
     e.preventDefault();
-    
     if (!formData.location.trim()) {
       setError('Please enter a location');
       return;
@@ -375,7 +58,6 @@ export default function CollegeRecommendation() {
     setError('');
     
     try {
-      // Use Vite environment variable for API URL with fallback to localhost:5001
       const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
       const response = await fetch(`${API_BASE_URL}/api/v1/colleges/search`, {
         method: 'POST',
@@ -392,23 +74,11 @@ export default function CollegeRecommendation() {
       });
 
       if (!response.ok) {
-        let errorMessage = 'Failed to fetch colleges';
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.message || errorMessage;
-        } catch (e) {
-          // If we can't parse the error response, use the status text
-          errorMessage = response.statusText || errorMessage;
-        }
-        throw new Error(errorMessage);
+        throw new Error('Failed to fetch colleges');
       }
 
       const data = await response.json();
-      
-      // If we have data.places, use it, otherwise use the raw data
       const places = data.data?.places || (Array.isArray(data.data) ? data.data : []);
-      
-      // Transform the API response to match our expected format
       const formattedResults = places.map((place, index) => ({
         id: place.id || `college-${index}`,
         name: place.displayName?.text || place.name || 'Unknown College',
@@ -423,105 +93,11 @@ export default function CollegeRecommendation() {
       setResults(formattedResults);
     } catch (err) {
       console.error('Error fetching colleges:', err);
-      
-      // More specific error messages based on error type
-      let errorMessage = 'Failed to fetch colleges. ';
-      if (err.message.includes('Failed to fetch')) {
-        errorMessage += 'Could not connect to the server. Please check your internet connection and try again.';
-      } else if (err.message.includes('NetworkError')) {
-        errorMessage += 'Network error. Please check your connection and try again.';
-      } else {
-        errorMessage += err.message || 'Please try again later.';
-      }
-      
-      setError(errorMessage);
-      setResults([]);
+      setError(err.message || 'Failed to fetch colleges. Please try again.');
     } finally {
       setLoading(false);
     }
   };
-  
-  const toggleFilter = (filterType, value) => {
-    setFilters(prev => {
-      const currentFilters = [...prev[filterType]];
-      const index = currentFilters.indexOf(value);
-      
-      if (index === -1) {
-        currentFilters.push(value);
-      } else {
-        currentFilters.splice(index, 1);
-      }
-      
-      return { ...prev, [filterType]: currentFilters };
-    });
-  };
-  
-  const FilterSection = ({ title, children, isOpen = true }) => (
-    <div className="mb-6">
-      <div className="flex justify-between items-center mb-2">
-        <h3 className="font-semibold text-gray-700">{title}</h3>
-        <FiChevronDown className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-      </div>
-      {isOpen && <div className="space-y-2">{children}</div>}
-    </div>
-  );
-  
-  const CollegeCard = ({ college }) => (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 hover:shadow-lg transition-shadow">
-      <div className="p-6">
-        <div className="flex justify-between items-start">
-          <div>
-            <h3 className="text-xl font-bold text-gray-900">{college.name}</h3>
-            <div className="flex items-center mt-1 text-sm text-gray-600">
-              <FiMapPin className="mr-1" />
-              <span>{college.location}</span>
-            </div>
-          </div>
-          <div className="flex items-center bg-blue-50 text-blue-800 px-2 py-1 rounded">
-            <FiStar className="text-yellow-400 mr-1" />
-            <span className="font-medium">{college.rating}</span>
-          </div>
-        </div>
-        
-        <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <p className="text-gray-500">Cutoff ({college.course})</p>
-            <p className="font-medium">{college.cutoff}/200</p>
-          </div>
-          <div>
-            <p className="text-gray-500">Fees (Annual)</p>
-            <p className="font-medium">
-              <FaRupeeSign className="inline mr-1" />
-              {college.fees.toLocaleString('en-IN')}
-            </p>
-          </div>
-        </div>
-        
-        <div className="mt-4">
-          <p className="text-gray-500 text-sm mb-1">Specializations</p>
-          <div className="flex flex-wrap gap-2">
-            {college.specializations.slice(0, 3).map((spec, i) => (
-              <span key={i} className="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded">
-                {spec}
-              </span>
-            ))}
-            {college.specializations.length > 3 && (
-              <span className="text-blue-600 text-xs px-2 py-1">+{college.specializations.length - 3} more</span>
-            )}
-          </div>
-        </div>
-        
-        <div className="mt-6 flex justify-between">
-          <button className="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50 transition-colors">
-            View Details
-          </button>
-          <button className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
-            Apply Now
-          </button>
-        </div>
-      </div>
-    </div>
-  );
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
@@ -767,6 +343,7 @@ export default function CollegeRecommendation() {
                         className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
                       >
                         View Details
+                        <FiChevronRight className="ml-2 -mr-1 h-4 w-4" />
                       </button>
                     </div>
                   </div>
@@ -774,7 +351,7 @@ export default function CollegeRecommendation() {
               ))}
             </div>
           </div>
-        ) : (
+        ) : !loading ? (
           <div className="text-center py-16 bg-white rounded-xl shadow-sm border border-gray-100">
             <FaGraduationCap className="mx-auto h-14 w-14 text-gray-300" />
             <h3 className="mt-4 text-lg font-medium text-gray-900">No colleges found</h3>
@@ -782,8 +359,8 @@ export default function CollegeRecommendation() {
               Try adjusting your search criteria to find more results.
             </p>
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );
-};
+}
