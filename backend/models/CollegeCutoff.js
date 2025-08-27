@@ -16,7 +16,7 @@ const communityCutoffSchema = new mongoose.Schema({
 });
 
 const collegeCutoffSchema = new mongoose.Schema({
-  placeId: { type: String, required: true, unique: true }, // Google Places ID
+  placeId: { type: String, required: true, unique: true },
   collegeName: { type: String, required: true },
   location: { type: String, required: true },
   cutoffs: {
