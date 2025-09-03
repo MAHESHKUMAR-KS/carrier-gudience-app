@@ -91,6 +91,7 @@ export const searchCollegesByCutoff = async (req, res) => {
   try {
     const { course, community, marks, location, limit = 10 } = req.query;
     
+    // Input validation
     if (!course || !community || !marks) {
       return res.status(400).json({
         status: 'fail',
@@ -98,35 +99,115 @@ export const searchCollegesByCutoff = async (req, res) => {
       });
     }
 
+    // Convert marks to number
+    const marksNum = parseFloat(marks);
+    if (isNaN(marksNum) || marksNum < 0 || marksNum > 200) {
+      return res.status(400).json({
+        status: 'fail',
+        message: 'Marks must be a number between 0 and 200'
+      });
+    }
+
+    // Normalize community names
+    const communityMap = {
+      "oc": "oc",
+      "open category": "oc",
+      "bc": "bc",
+      "backward class": "bc",
+      "mbc": "mbc",
+      "most backward class": "mbc",
+      "sc": "sc",
+      "scheduled caste": "sc",
+      "st": "st",
+      "scheduled tribe": "st",
+      "ews": "ews",
+      "economically weaker section": "ews"
+    };
+    
+    const dbCommunity = communityMap[community.toLowerCase()] || 'oc';
+
+    // Normalize course names (B.Tech -> btech)
+    const normalizedCourse = course.toLowerCase().replace(/[^a-z0-9]/g, '');
+    
+    console.log('Search parameters:', { 
+      course, 
+      normalizedCourse, 
+      community, 
+      dbCommunity, 
+      marks: marksNum 
+    });
+
     const query = {};
     
     // Add location filter if provided
-    if (location) {
-      query.location = new RegExp(location, 'i');
+    if (location && location.trim() !== '') {
+      query.location = new RegExp(location.trim(), 'i');
     }
     
-    // Add course filter
-    query[`cutoffs.${course}.${community.toLowerCase()}`] = { $lte: parseFloat(marks) };
+    // Build the query for cutoff scores based on the actual schema
+    query['cutoffs'] = {
+      $elemMatch: {
+        course: normalizedCourse,
+        [dbCommunity]: { $lte: marksNum }
+      }
+    };
     
-    const colleges = await CollegeCutoff.find(query)
-      .sort({ [`cutoffs.${course}.${community.toLowerCase()}`]: 1 })
-      .limit(parseInt(limit));
+    console.log('MongoDB Query:', JSON.stringify(query, null, 2));
     
-    // Add eligibility status to each college
-    const results = colleges.map(college => {
-      const collegeObj = college.toObject();
-      const cutoff = college.cutoffs.get(course);
-      const communityCutoff = cutoff[community.toLowerCase()] || cutoff.general;
+    // Execute the query with projection to only return necessary fields
+    const colleges = await CollegeCutoff.find(
+      query,
+      {
+        name: 1,
+        location: 1,
+        rating: 1,
+        cutoffs: 1,
+        fees: 1,
+        specializations: 1,
+        website: 1,
+        contact: 1
+      }
+    )
+    .sort({ [cutoffField]: 1 })
+    .limit(parseInt(limit, 10) || 10)
+    .lean();
+    
+    console.log(`Found ${colleges.length} colleges matching criteria`);
+    
+    // Process and enhance the results
+    const results = [];
+    
+    colleges.forEach(college => {
+      // Find the matching cutoff for the course
+      const cutoff = college.cutoffs?.find(c => c.course === normalizedCourse);
+      if (!cutoff) return; // Skip if no cutoff for this course
+      
+      // Get the cutoff value for the community or fallback to general
+      const communityCutoff = cutoff[dbCommunity] || cutoff.general;
+      if (communityCutoff === undefined) return; // Skip if no cutoff for this community
+      
+      const isEligible = marksNum >= communityCutoff;
+      const difference = parseFloat((marksNum - communityCutoff).toFixed(2));
       
       return {
-        ...collegeObj,
+        id: college._id || `college-${Math.random().toString(36).substr(2, 9)}`,
+        name: college.name || 'Unknown College',
+        location: college.location || 'Location not specified',
+        rating: college.rating || 0,
         cutoff: communityCutoff,
-        isEligible: parseFloat(marks) >= communityCutoff,
-        difference: parseFloat(marks) - communityCutoff
+        fees: college.fees || 0,
+        course: course.toUpperCase(),
+        community: dbCommunity.toUpperCase(),
+        specializations: Array.isArray(college.specializations) ? college.specializations : [],
+        isEligible,
+        difference,
+        website: college.website || '',
+        contact: college.contact || ''
       };
     });
-
-    res.status(200).json({
+    
+    // Return the results
+    return res.status(200).json({
       status: 'success',
       results: results.length,
       data: results

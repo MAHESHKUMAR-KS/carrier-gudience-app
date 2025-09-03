@@ -366,8 +366,9 @@ export default function CollegeRecommendation() {
   const handleSearch = async (e) => {
     e.preventDefault();
     
-    if (!formData.location.trim()) {
-      setError('Please enter a location');
+    // Validate required fields
+    if (!formData.cutoff) {
+      setError('Please enter your cutoff marks');
       return;
     }
 
@@ -377,65 +378,88 @@ export default function CollegeRecommendation() {
     try {
       // Use Vite environment variable for API URL with fallback to localhost:5001
       const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
-      const response = await fetch(`${API_BASE_URL}/api/v1/colleges/search`, {
-        method: 'POST',
+      
+      // Prepare query parameters
+      const params = new URLSearchParams({
+        course: formData.course || 'btech',
+        community: formData.community || 'oc',
+        marks: formData.cutoff,
+        limit: 10
+      });
+      
+      // Add location if provided
+      if (formData.location?.trim()) {
+        params.append('location', formData.location.trim());
+      }
+      
+      const url = `${API_BASE_URL}/api/v1/college-cutoffs/search?${params.toString()}`;
+      console.log('API Request URL:', url);
+      
+      const response = await fetch(url, {
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          location: formData.location,
-          community: formData.community,
-          cutoff: formData.cutoff,
-          course: formData.course
-        }),
         credentials: 'include'
       });
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API Error Response:', {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText
+        });
+        
         let errorMessage = 'Failed to fetch colleges';
         try {
-          const errorData = await response.json();
+          const errorData = JSON.parse(errorText);
           errorMessage = errorData.message || errorMessage;
         } catch (e) {
-          // If we can't parse the error response, use the status text
           errorMessage = response.statusText || errorMessage;
         }
         throw new Error(errorMessage);
       }
 
       const data = await response.json();
+      console.log('API Response:', data);
       
-      // If we have data.places, use it, otherwise use the raw data
-      const places = data.data?.places || (Array.isArray(data.data) ? data.data : []);
-      
-      // Transform the API response to match our expected format
-      const formattedResults = places.map((place, index) => ({
-        id: place.id || `college-${index}`,
-        name: place.displayName?.text || place.name || 'Unknown College',
-        location: place.formattedAddress || place.location || 'Location not available',
-        rating: (place.rating || 4.0).toFixed(1),
-        cutoff: place.cutoff || Math.floor(Math.random() * 50) + 50,
-        fees: place.fees || Math.floor(Math.random() * 200000) + 50000,
-        specializations: place.specializations || ['Computer Science', 'Electronics', 'Mechanical'],
-        course: place.course || formData.course || 'btech'
-      }));
-
-      setResults(formattedResults);
-    } catch (err) {
-      console.error('Error fetching colleges:', err);
-      
-      // More specific error messages based on error type
-      let errorMessage = 'Failed to fetch colleges. ';
-      if (err.message.includes('Failed to fetch')) {
-        errorMessage += 'Could not connect to the server. Please check your internet connection and try again.';
-      } else if (err.message.includes('NetworkError')) {
-        errorMessage += 'Network error. Please check your connection and try again.';
-      } else {
-        errorMessage += err.message || 'Please try again later.';
+      // Check if we have valid data
+      if (!data || !Array.isArray(data.data)) {
+        console.error('Invalid response format - expected data.data to be an array');
+        throw new Error('Invalid response format from server');
       }
       
-      setError(errorMessage);
-      setResults([]);
+      // Transform the data to match the expected format
+      const processedResults = data.data.map(college => {
+        // Get the cutoff value for the selected community and course
+        const communityKey = formData.community ? 
+          formData.community.toLowerCase().replace(/[^a-z0-9]/g, '') : 'oc';
+        const courseKey = formData.course ? 
+          formData.course.toLowerCase().replace(/[^a-z0-9]/g, '') : 'btech';
+        
+        const cutoffValue = college.cutoffs?.[courseKey]?.[communityKey] || 
+                          college.cutoffs?.[courseKey]?.general || 0;
+        
+        return {
+          id: college.placeId || college._id || `college-${Math.random().toString(36).substr(2, 9)}`,
+          name: college.name || 'Unknown College',
+          location: college.location || 'Location not available',
+          rating: college.rating?.toFixed?.(1) || 'N/A',
+          cutoff: cutoffValue,
+          fees: college.fees || 0,
+          course: formData.course || 'B.Tech',
+          specializations: college.specializations || [],
+          isEligible: college.isEligible,
+          difference: college.difference || 0
+        };
+      });
+      
+      console.log('Processed Results:', processedResults);
+      setResults(processedResults);
+    } catch (error) {
+      console.error('Error in handleSearch:', error);
+      setError(error.message || 'An error occurred while searching for colleges');
     } finally {
       setLoading(false);
     }
@@ -726,13 +750,25 @@ export default function CollegeRecommendation() {
                       </div>
                     </div>
                     
-                    <div className="mt-6 grid grid-cols-2 gap-6">
-                      <div>
-                        <p className="text-sm font-medium text-gray-500 mb-1">Cutoff ({college.course})</p>
-                        <p className="text-lg font-semibold text-gray-900">{college.cutoff}/200</p>
+                    <div className="mt-6 grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium text-gray-500">Cutoff ({college.course})</p>
+                        <p className="text-lg font-semibold text-gray-900">
+                          {college.cutoff}/200
+                        </p>
+                        {college.isEligible !== undefined && (
+                          <p className={`text-sm ${college.isEligible ? 'text-green-600' : 'text-red-600'}`}>
+                            {college.isEligible ? '✅ Eligible' : '❌ Not Eligible'}
+                            {college.difference !== 0 && (
+                              <span className="ml-2 text-xs text-gray-500">
+                                ({college.difference > 0 ? '+' : ''}{college.difference} marks)
+                              </span>
+                            )}
+                          </p>
+                        )}
                       </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-500 mb-1">Fees (Annual)</p>
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium text-gray-500">Fees (Annual)</p>
                         <p className="text-lg font-semibold text-gray-900">
                           <FaRupeeSign className="inline mr-1 -mt-1" />
                           {college.fees?.toLocaleString?.('en-IN') || 'N/A'}

@@ -1,5 +1,5 @@
 import express from 'express';
-import { signup, login, protect } from '../controllers/authController.js';
+import { signup, login, protect, restrictTo } from '../controllers/authController.js';
 
 const router = express.Router();
 
@@ -7,7 +7,20 @@ const router = express.Router();
 router.post('/signup', signup);
 router.post('/login', login);
 
-// Protected routes (example)
-// router.get('/me', protect, getMe);
+// Example protected route
+router.get('/me', protect, (req, res) => {
+  res.status(200).json({
+    status: 'success',
+    user: req.user
+  });
+});
+
+// Example admin-only route
+router.get('/admin-only', protect, restrictTo('admin'), (req, res) => {
+  res.status(200).json({
+    status: 'success',
+    message: 'Welcome Admin!'
+  });
+});
 
 export default router;

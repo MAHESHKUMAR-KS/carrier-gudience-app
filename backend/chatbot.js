@@ -9,7 +9,7 @@ const router = express.Router();
 // 🔹 Gemini Client
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// Use Gemini Flash 1.5
+
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
 // 🔹 Chat Route
