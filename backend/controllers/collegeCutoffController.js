@@ -138,27 +138,22 @@ export const searchCollegesByCutoff = async (req, res) => {
     });
 
     const query = {};
-    
+
     // Add location filter if provided
     if (location && location.trim() !== '') {
       query.location = new RegExp(location.trim(), 'i');
     }
-    
-    // Build the query for cutoff scores based on the actual schema
-    query['cutoffs'] = {
-      $elemMatch: {
-        course: normalizedCourse,
-        [dbCommunity]: { $lte: marksNum }
-      }
-    };
-    
+
+    // Build the query for cutoff scores using $where since cutoffs is a Map
+    query.$where = `this.cutoffs && this.cutoffs['${normalizedCourse}'] && (this.cutoffs['${normalizedCourse}']['${dbCommunity}'] !== undefined && this.cutoffs['${normalizedCourse}']['${dbCommunity}'] <= ${marksNum} || this.cutoffs['${normalizedCourse}']['general'] !== undefined && this.cutoffs['${normalizedCourse}']['general'] <= ${marksNum})`;
+
     console.log('MongoDB Query:', JSON.stringify(query, null, 2));
-    
+
     // Execute the query with projection to only return necessary fields
     const colleges = await CollegeCutoff.find(
       query,
       {
-        name: 1,
+        collegeName: 1,
         location: 1,
         rating: 1,
         cutoffs: 1,
@@ -168,7 +163,7 @@ export const searchCollegesByCutoff = async (req, res) => {
         contact: 1
       }
     )
-    .sort({ [cutoffField]: 1 })
+    .sort({ collegeName: 1 })
     .limit(parseInt(limit, 10) || 10)
     .lean();
     
@@ -176,22 +171,22 @@ export const searchCollegesByCutoff = async (req, res) => {
     
     // Process and enhance the results
     const results = [];
-    
+
     colleges.forEach(college => {
       // Find the matching cutoff for the course
-      const cutoff = college.cutoffs?.find(c => c.course === normalizedCourse);
+      const cutoff = college.cutoffs?.get(normalizedCourse);
       if (!cutoff) return; // Skip if no cutoff for this course
-      
+
       // Get the cutoff value for the community or fallback to general
       const communityCutoff = cutoff[dbCommunity] || cutoff.general;
       if (communityCutoff === undefined) return; // Skip if no cutoff for this community
-      
+
       const isEligible = marksNum >= communityCutoff;
       const difference = parseFloat((marksNum - communityCutoff).toFixed(2));
-      
-      return {
+
+      results.push({
         id: college._id || `college-${Math.random().toString(36).substr(2, 9)}`,
-        name: college.name || 'Unknown College',
+        name: college.collegeName || 'Unknown College',
         location: college.location || 'Location not specified',
         rating: college.rating || 0,
         cutoff: communityCutoff,
@@ -203,7 +198,7 @@ export const searchCollegesByCutoff = async (req, res) => {
         difference,
         website: college.website || '',
         contact: college.contact || ''
-      };
+      });
     });
     
     // Return the results
