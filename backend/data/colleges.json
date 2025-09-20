@@ -1,0 +1,52 @@
+[
+  {
+    "id": "college1",
+    "name": "Indian Institute of Technology Bombay",
+    "location": "Mumbai, Maharashtra",
+    "cutoff": 90,
+    "fees": 200000,
+    "rating": 4.8,
+    "specializations": ["Computer Science", "Electrical", "Mechanical"],
+    "entranceExamsAccepted": ["JEE Main", "JEE Advanced"]
+  },
+  {
+    "id": "college2",
+    "name": "Birla Institute of Technology and Science, Pilani",
+    "location": "Pilani, Rajasthan",
+    "cutoff": 85,
+    "fees": 180000,
+    "rating": 4.5,
+    "specializations": ["Computer Science", "Electronics", "Civil"],
+    "entranceExamsAccepted": ["BITSAT"]
+  },
+  {
+    "id": "college3",
+    "name": "Vellore Institute of Technology",
+    "location": "Vellore, Tamil Nadu",
+    "cutoff": 80,
+    "fees": 150000,
+    "rating": 4.3,
+    "specializations": ["Computer Science", "Mechanical", "Civil"],
+    "entranceExamsAccepted": ["VITEEE"]
+  },
+  {
+    "id": "college4",
+    "name": "National Institute of Technology, Trichy",
+    "location": "Trichy, Tamil Nadu",
+    "cutoff": 88,
+    "fees": 170000,
+    "rating": 4.6,
+    "specializations": ["Electrical", "Mechanical", "Civil"],
+    "entranceExamsAccepted": ["JEE Main"]
+  },
+  {
+    "id": "college5",
+    "name": "Delhi Technological University",
+    "location": "Delhi",
+    "cutoff": 82,
+    "fees": 160000,
+    "rating": 4.4,
+    "specializations": ["Computer Science", "Electrical", "Civil"],
+    "entranceExamsAccepted": ["JEE Main"]
+  }
+]

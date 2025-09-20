@@ -1,33 +1,196 @@
+// controllers/collegeCutoffController.js
 import CollegeCutoff from '../models/CollegeCutoff.js';
+import fs from 'fs/promises';
+import path from 'path';
 
-export const updateCollegeCutoff = async (req, res) => {
+// ---------------- SEARCH COLLEGES ----------------
+export const searchCollegesByCutoff = async (req, res) => {
   try {
-    const { placeId, collegeName, location, course, cutoffs } = req.body;
-    
-    const updateData = {
-      collegeName,
-      location,
-      $set: {
-        [`cutoffs.${course}`]: cutoffs,
-        lastUpdated: new Date()
+    const { course, community, marks, location, limit = 10, source = 'db' } = req.query;
+
+    if (!course || !community || !marks) {
+      return res.status(400).json({ status: 'fail', message: 'Course, community, and marks are required' });
+    }
+
+    const marksNum = parseFloat(marks);
+    if (isNaN(marksNum) || marksNum < 0 || marksNum > 200) {
+      return res.status(400).json({ status: 'fail', message: 'Marks must be between 0 and 200' });
+    }
+
+    const communityMap = {
+      oc: 'oc', 'open category': 'oc',
+      bc: 'bc', 'backward class': 'bc',
+      mbc: 'mbc', 'most backward class': 'mbc',
+      sc: 'sc', 'scheduled caste': 'sc',
+      st: 'st', 'scheduled tribe': 'st',
+      ews: 'ews', 'economically weaker section': 'ews',
+    };
+    const dbCommunity = communityMap[community.toLowerCase()] || 'oc';
+    const normalizedCourse = course.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const resolvedCity = location?.trim();
+
+    // ---------- Excel source ----------
+    if (source === 'excel') {
+      const dataPath = path.join(process.cwd(), 'data', 'college_search.json');
+      try {
+        const raw = await fs.readFile(dataPath, 'utf-8');
+        const json = JSON.parse(raw);
+        const cityRegex = resolvedCity ? new RegExp(resolvedCity, 'i') : null;
+
+        const filtered = json
+          .filter(c => {
+            // Check if college name contains the city (since location is in college name)
+            const locationMatch = !cityRegex || cityRegex.test(c['COLLEGE NAME']);
+            // Check if the specific community cutoff exists and user marks are >= cutoff
+            const communityCutoff = c[dbCommunity.toUpperCase()];
+            const cutoffMatch = communityCutoff !== null && communityCutoff !== undefined && marksNum >= parseFloat(communityCutoff);
+            return locationMatch && cutoffMatch;
+          });
+
+        console.log('Filtered Excel results count:', filtered.length);
+        console.log('Sample filtered result:', filtered[0]);
+        console.log('Community being searched:', dbCommunity);
+        console.log('Marks being searched:', marksNum);
+
+        const limited = filtered
+          .map(c => {
+            const communityCutoff = c[dbCommunity.toUpperCase()];
+            return {
+              id: c['COLLEGE\nCODE'],
+              name: c['COLLEGE NAME'],
+              location: c['COLLEGE NAME'], // Location is embedded in college name
+              cutoff: parseFloat(communityCutoff || 0),
+              fees: 0, // Not available in your data
+              course: c['BRANCH NAME'],
+              community: dbCommunity.toUpperCase(),
+              specializations: [c['BRANCH NAME']],
+              isEligible: marksNum >= parseFloat(communityCutoff || Infinity),
+              difference: parseFloat((marksNum - (parseFloat(communityCutoff) || 0)).toFixed(2)),
+              website: '',
+              contact: '',
+            };
+          })
+          .sort((a, b) => a.cutoff - b.cutoff)
+          .slice(0, parseInt(limit, 10));
+
+        return res.status(200).json({ status: 'success', results: limited.length, data: limited });
+      } catch (e) {
+        console.warn('Excel source failed, falling back to DB:', e.message);
       }
+    }
+
+    // ---------- MongoDB search ----------
+    const query = {
+      [`cutoffs.${normalizedCourse}.${dbCommunity}`]: { $lte: marksNum },
+      ...(resolvedCity && { location: new RegExp(resolvedCity, 'i') }),
     };
 
-    const options = { upsert: true, new: true };
-    
-    const updatedCutoff = await CollegeCutoff.findOneAndUpdate(
-      { placeId },
-      updateData,
-      options
-    );
+    const colleges = await CollegeCutoff.find(query).limit(parseInt(limit, 10));
 
-    res.status(200).json({
-      status: 'success',
-      data: updatedCutoff
+    const results = colleges
+      .map(college => {
+        // Handle MongoDB Map structure
+        const courseCutoffs = college.cutoffs?.get?.(normalizedCourse);
+        const cutoff = courseCutoffs?.[dbCommunity] ?? courseCutoffs?.general;
+        if (!cutoff) return null; // skip if cutoff is missing
+        return {
+          id: college._id,
+          name: college.collegeName,
+          location: college.location,
+          rating: college.rating || 0,
+          cutoff,
+          fees: college.fees || 0,
+          course: course.toUpperCase(),
+          community: dbCommunity.toUpperCase(),
+          specializations: college.specializations || [],
+          isEligible: marksNum >= cutoff,
+          difference: parseFloat((marksNum - cutoff).toFixed(2)),
+          website: college.website || '',
+          contact: college.contact || '',
+        };
+      })
+      .filter(Boolean);
+
+    console.log('Final mapped results:', results);
+
+    return res.status(200).json({ status: 'success', results: results.length, data: results });
+
+  } catch (error) {
+    console.error('Error searching colleges by cutoff:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Failed to search colleges',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+// ---------------- GET COLLEGE CUTOFF ----------------
+export const getCollegeCutoff = async (req, res) => {
+  try {
+    const { collegeId } = req.query;
+    
+    if (!collegeId) {
+      return res.status(400).json({ status: 'fail', message: 'College ID is required' });
+    }
+
+    const college = await CollegeCutoff.findById(collegeId);
+    
+    if (!college) {
+      return res.status(404).json({ status: 'fail', message: 'College not found' });
+    }
+
+    return res.status(200).json({ status: 'success', data: college });
+  } catch (error) {
+    console.error('Error getting college cutoff:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Failed to get college cutoff',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+// ---------------- UPDATE COLLEGE CUTOFF ----------------
+export const updateCollegeCutoff = async (req, res) => {
+  try {
+    const { collegeId, course, community, cutoff } = req.body;
+    
+    if (!collegeId || !course || !community || cutoff === undefined) {
+      return res.status(400).json({ 
+        status: 'fail', 
+        message: 'College ID, course, community, and cutoff are required' 
+      });
+    }
+
+    const college = await CollegeCutoff.findById(collegeId);
+    
+    if (!college) {
+      return res.status(404).json({ status: 'fail', message: 'College not found' });
+    }
+
+    // Update the cutoff for the specific course and community
+    if (!college.cutoffs) {
+      college.cutoffs = new Map();
+    }
+    
+    if (!college.cutoffs.has(course)) {
+      college.cutoffs.set(course, {});
+    }
+    
+    const courseCutoffs = college.cutoffs.get(course);
+    courseCutoffs[community] = cutoff;
+    
+    await college.save();
+
+    return res.status(200).json({ 
+      status: 'success', 
+      message: 'Cutoff updated successfully',
+      data: college 
     });
   } catch (error) {
     console.error('Error updating college cutoff:', error);
-    res.status(500).json({
+    return res.status(500).json({
       status: 'error',
       message: 'Failed to update college cutoff',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -35,183 +198,27 @@ export const updateCollegeCutoff = async (req, res) => {
   }
 };
 
-export const getCollegeCutoff = async (req, res) => {
+// ---------------- RUN PYTHON SCRIPT ----------------
+export const runPythonScript = async (req, res) => {
   try {
-    const { placeId, course, community, marks } = req.query;
-    
-    const query = { placeId };
-    if (course) query[`cutoffs.${course}`] = { $exists: true };
-    
-    const college = await CollegeCutoff.findOne(query);
-    
-    if (!college) {
-      return res.status(404).json({
-        status: 'fail',
-        message: 'College cutoff data not found'
-      });
-    }
+    const { exec } = await import('child_process');
+    const { promisify } = await import('util');
+    const execAsync = promisify(exec);
 
-    let result = { ...college.toObject() };
+    // Run the Python script
+    const { stdout, stderr } = await execAsync('python script.py');
     
-    // Filter by course if specified
-    if (course) {
-      const courseCutoff = college.cutoffs.get(course);
-      if (courseCutoff) {
-        result.cutoff = courseCutoff;
-        
-        // Check if marks meet the cutoff for the specified community
-        if (community && marks) {
-          const communityCutoff = courseCutoff[community.toLowerCase()] || courseCutoff.general;
-          result.meetsCutoff = marks >= communityCutoff;
-          result.cutoffStatus = {
-            community,
-            requiredCutoff: communityCutoff,
-            studentMarks: parseFloat(marks),
-            isEligible: marks >= communityCutoff
-          };
-        }
-      }
-    }
-
-    res.status(200).json({
-      status: 'success',
-      data: result
+    return res.status(200).json({ 
+      status: 'success', 
+      message: 'Python script executed successfully',
+      output: stdout,
+      error: stderr || null
     });
   } catch (error) {
-    console.error('Error fetching college cutoff:', error);
-    res.status(500).json({
+    console.error('Error running Python script:', error);
+    return res.status(500).json({
       status: 'error',
-      message: 'Failed to fetch college cutoff',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
-  }
-};
-
-export const searchCollegesByCutoff = async (req, res) => {
-  try {
-    const { course, community, marks, location, limit = 10 } = req.query;
-    
-    // Input validation
-    if (!course || !community || !marks) {
-      return res.status(400).json({
-        status: 'fail',
-        message: 'Course, community, and marks are required parameters'
-      });
-    }
-
-    // Convert marks to number
-    const marksNum = parseFloat(marks);
-    if (isNaN(marksNum) || marksNum < 0 || marksNum > 200) {
-      return res.status(400).json({
-        status: 'fail',
-        message: 'Marks must be a number between 0 and 200'
-      });
-    }
-
-    // Normalize community names
-    const communityMap = {
-      "oc": "oc",
-      "open category": "oc",
-      "bc": "bc",
-      "backward class": "bc",
-      "mbc": "mbc",
-      "most backward class": "mbc",
-      "sc": "sc",
-      "scheduled caste": "sc",
-      "st": "st",
-      "scheduled tribe": "st",
-      "ews": "ews",
-      "economically weaker section": "ews"
-    };
-    
-    const dbCommunity = communityMap[community.toLowerCase()] || 'oc';
-
-    // Normalize course names (B.Tech -> btech)
-    const normalizedCourse = course.toLowerCase().replace(/[^a-z0-9]/g, '');
-    
-    console.log('Search parameters:', { 
-      course, 
-      normalizedCourse, 
-      community, 
-      dbCommunity, 
-      marks: marksNum 
-    });
-
-    const query = {};
-
-    // Add location filter if provided
-    if (location && location.trim() !== '') {
-      query.location = new RegExp(location.trim(), 'i');
-    }
-
-    // Build the query for cutoff scores using $where since cutoffs is a Map
-    query.$where = `this.cutoffs && this.cutoffs['${normalizedCourse}'] && (this.cutoffs['${normalizedCourse}']['${dbCommunity}'] !== undefined && this.cutoffs['${normalizedCourse}']['${dbCommunity}'] <= ${marksNum} || this.cutoffs['${normalizedCourse}']['general'] !== undefined && this.cutoffs['${normalizedCourse}']['general'] <= ${marksNum})`;
-
-    console.log('MongoDB Query:', JSON.stringify(query, null, 2));
-
-    // Execute the query with projection to only return necessary fields
-    const colleges = await CollegeCutoff.find(
-      query,
-      {
-        collegeName: 1,
-        location: 1,
-        rating: 1,
-        cutoffs: 1,
-        fees: 1,
-        specializations: 1,
-        website: 1,
-        contact: 1
-      }
-    )
-    .sort({ collegeName: 1 })
-    .limit(parseInt(limit, 10) || 10)
-    .lean();
-    
-    console.log(`Found ${colleges.length} colleges matching criteria`);
-    
-    // Process and enhance the results
-    const results = [];
-
-    colleges.forEach(college => {
-      // Find the matching cutoff for the course
-      const cutoff = college.cutoffs?.get(normalizedCourse);
-      if (!cutoff) return; // Skip if no cutoff for this course
-
-      // Get the cutoff value for the community or fallback to general
-      const communityCutoff = cutoff[dbCommunity] || cutoff.general;
-      if (communityCutoff === undefined) return; // Skip if no cutoff for this community
-
-      const isEligible = marksNum >= communityCutoff;
-      const difference = parseFloat((marksNum - communityCutoff).toFixed(2));
-
-      results.push({
-        id: college._id || `college-${Math.random().toString(36).substr(2, 9)}`,
-        name: college.collegeName || 'Unknown College',
-        location: college.location || 'Location not specified',
-        rating: college.rating || 0,
-        cutoff: communityCutoff,
-        fees: college.fees || 0,
-        course: course.toUpperCase(),
-        community: dbCommunity.toUpperCase(),
-        specializations: Array.isArray(college.specializations) ? college.specializations : [],
-        isEligible,
-        difference,
-        website: college.website || '',
-        contact: college.contact || ''
-      });
-    });
-    
-    // Return the results
-    return res.status(200).json({
-      status: 'success',
-      results: results.length,
-      data: results
-    });
-  } catch (error) {
-    console.error('Error searching colleges by cutoff:', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Failed to search colleges by cutoff',
+      message: 'Failed to run Python script',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }

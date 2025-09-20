@@ -6,6 +6,8 @@ import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Careers from './pages/Careers';
 import CollegeRecommendation from './pages/CollegeRecommendation';
+import CollegeSearch from './pages/CollegeSearch';
+import ExamEligibility from './pages/ExamEligibility';
 import StudentProfile from './pages/StudentProfile';
 import Chatbot from './pages/Chatbot';
 import Login from './pages/Login';
@@ -36,6 +38,16 @@ const AppLayout = () => (
         <Route path="/college-recommendation" element={
           <ProtectedRoute>
             <CollegeRecommendation />
+          </ProtectedRoute>
+        } />
+        <Route path="/college-search" element={
+          <ProtectedRoute>
+            <CollegeSearch />
+          </ProtectedRoute>
+        } />
+        <Route path="/exam-eligibility" element={
+          <ProtectedRoute>
+            <ExamEligibility />
           </ProtectedRoute>
         } />
         

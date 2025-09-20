@@ -7,57 +7,67 @@ function Chatbot() {
   const [input, setInput] = useState('');
   const messagesEndRef = useRef(null);
 
-  const handleSubmit = (e) => {
+  // Auto-scroll to bottom
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  // Handle sending message
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!input.trim()) return;
 
     // Add user message
     const userMessage = { id: Date.now(), text: input, sender: 'user' };
     setMessages(prev => [...prev, userMessage]);
+    const messageToSend = input;
     setInput('');
 
-    // Simulate bot response
-    setTimeout(() => {
-      const botResponses = [
-        'I see. Can you tell me more about your interests?',
-        'That\'s interesting! What career paths are you considering?',
-        'I can help you explore different career options based on your skills.',
-        'Have you thought about what subjects you enjoy the most?',
-        'I can provide information about colleges that match your interests.'
-      ];
-      const botMessage = {
-        id: Date.now() + 1,
-        text: botResponses[Math.floor(Math.random() * botResponses.length)],
-        sender: 'bot'
-      };
-      setMessages(prev => [...prev, botMessage]);
-    }, 1000);
-  };
+    try {
+      // Call backend API
+      const response = await fetch('http://localhost:5001/api/v1/chatbot/chat', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ message: messageToSend }),
+        credentials: 'include',
+        mode: 'cors'
+      });
 
-  // Auto-scroll to bottom of messages
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Server response:', errorText);
+        throw new Error(`Server responded with ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      // Add bot response
+      const botMessage = { id: Date.now() + 1, text: data.reply || 'Sorry, no reply.', sender: 'bot' };
+      setMessages(prev => [...prev, botMessage]);
+    } catch (err) {
+      console.error('Error fetching bot reply:', err);
+      const botMessage = { id: Date.now() + 1, text: 'Sorry, I am having trouble responding.', sender: 'bot' };
+      setMessages(prev => [...prev, botMessage]);
+    }
+  };
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       <h1 className="text-3xl font-bold mb-6">Career Guidance Assistant</h1>
-      
+
       <div className="bg-white rounded-lg shadow-lg overflow-hidden">
         {/* Chat messages */}
         <div className="h-96 overflow-y-auto p-4 space-y-4">
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div
-                className={`max-w-xs md:max-w-md lg:max-w-lg xl:max-w-xl rounded-lg px-4 py-2 ${
-                  message.sender === 'user'
-                    ? 'bg-indigo-600 text-white rounded-br-none'
-                    : 'bg-gray-100 text-gray-800 rounded-bl-none'
-                }`}
-              >
+          {messages.map(message => (
+            <div key={message.id} className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+              <div className={`max-w-xs md:max-w-md lg:max-w-lg xl:max-w-xl rounded-lg px-4 py-2 ${
+                message.sender === 'user'
+                  ? 'bg-indigo-600 text-white rounded-br-none'
+                  : 'bg-gray-100 text-gray-800 rounded-bl-none'
+              }`}>
                 {message.text}
               </div>
             </div>

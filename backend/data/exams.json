@@ -1,0 +1,22 @@
+[
+  {
+    "name": "JEE Main",
+    "minMarks": 75,
+    "universities": ["Indian Institute of Technology Bombay", "National Institute of Technology, Trichy", "Delhi Technological University"]
+  },
+  {
+    "name": "JEE Advanced",
+    "minMarks": 90,
+    "universities": ["Indian Institute of Technology Bombay"]
+  },
+  {
+    "name": "BITSAT",
+    "minMarks": 80,
+    "universities": ["Birla Institute of Technology and Science, Pilani"]
+  },
+  {
+    "name": "VITEEE",
+    "minMarks": 70,
+    "universities": ["Vellore Institute of Technology"]
+  }
+]

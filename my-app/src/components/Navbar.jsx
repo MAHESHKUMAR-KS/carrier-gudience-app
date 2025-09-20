@@ -20,7 +20,8 @@ const Navbar = () => {
   const navItems = [
     { href: '/', label: 'Home' },
     { href: '/careers', label: 'Careers' },
-    { href: '/college-recommendation', label: 'College Recs' },
+    { href: '/college-search', label: 'College Search' },
+    { href: '/exam-eligibility', label: 'Exam Eligibility' },
     { href: '/chatbot', label: 'AI Assistant' },
     { href: '/profile', label: 'My Profile' },
   ];
