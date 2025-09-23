@@ -3,6 +3,7 @@ import { authAPI } from '../services/api';
 
 const AuthContext = createContext({
   user: null,
+  currentUser: null,
   isAuthenticated: false,
   isLoading: true,
   login: () => {},
@@ -58,6 +59,7 @@ export const AuthProvider = ({ children }) => {
     <AuthContext.Provider
       value={{
         user,
+        currentUser: user,
         isAuthenticated: !!user,
         isLoading,
         login,

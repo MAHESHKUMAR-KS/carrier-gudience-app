@@ -7,6 +7,7 @@ function Chatbot() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false); // show "typing..." indicator
   const messagesEndRef = useRef(null);
+  const [isOpen, setIsOpen] = useState(false);
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -62,48 +63,74 @@ function Chatbot() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <h1 className="text-3xl font-bold mb-6">Career Guidance Assistant</h1>
+    <div className="fixed bottom-6 right-6 z-50">
+      {/* Toggle Button */}
+      <button
+        type="button"
+        onClick={() => setIsOpen(prev => !prev)}
+        className="flex items-center justify-center w-14 h-14 rounded-full shadow-lg bg-indigo-600 text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        aria-label={isOpen ? 'Close chat' : 'Open chat'}
+      >
+        {/* Chat icon (SVG) */}
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-7 h-7">
+          <path d="M4 4h16a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H8l-4 4v-4H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm2 5h12v2H6V9zm0 4h8v2H6v-2z" />
+        </svg>
+      </button>
 
-      <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-        {/* Chat messages */}
-        <div className="h-96 overflow-y-auto p-4 space-y-4">
-          {messages.map(message => (
-            <div key={message.id} className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-xs md:max-w-md lg:max-w-lg xl:max-w-xl rounded-lg px-4 py-2 ${
-                message.sender === 'user'
-                  ? 'bg-indigo-600 text-white rounded-br-none'
-                  : 'bg-gray-100 text-gray-800 rounded-bl-none'
-              }`}>
-                {message.text}
-              </div>
-            </div>
-          ))}
-          {loading && (
-            <div className="text-gray-500 italic">Bot is typing...</div>
-          )}
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Input area */}
-        <form onSubmit={handleSubmit} className="border-t border-gray-200 p-4">
-          <div className="flex space-x-2">
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              placeholder="Type your message..."
-            />
+      {/* Chat Panel */}
+      {isOpen && (
+        <div className="mt-3 w-[90vw] max-w-sm sm:max-w-md bg-white rounded-xl shadow-2xl overflow-hidden border border-gray-200">
+          <div className="px-4 py-2 bg-indigo-600 text-white flex items-center justify-between">
+            <span className="font-semibold">Career Assistant</span>
             <button
-              type="submit"
-              className="bg-indigo-600 text-white px-6 py-2 rounded-full hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+              type="button"
+              onClick={() => setIsOpen(false)}
+              className="text-white/90 hover:text-white focus:outline-none"
+              aria-label="Close"
             >
-              Send
+              ✕
             </button>
           </div>
-        </form>
-      </div>
+
+          {/* Messages */}
+          <div className="h-80 overflow-y-auto p-3 space-y-3">
+            {messages.map(message => (
+              <div key={message.id} className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${
+                  message.sender === 'user'
+                    ? 'bg-indigo-600 text-white rounded-br-none'
+                    : 'bg-gray-100 text-gray-800 rounded-bl-none'
+                }`}>
+                  {message.text}
+                </div>
+              </div>
+            ))}
+            {loading && (
+              <div className="text-gray-500 italic text-sm">Bot is typing...</div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Input */}
+          <form onSubmit={handleSubmit} className="border-t border-gray-200 p-2">
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+                placeholder="Type your message..."
+              />
+              <button
+                type="submit"
+                className="bg-indigo-600 text-white px-4 py-2 rounded-full hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                Send
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 }

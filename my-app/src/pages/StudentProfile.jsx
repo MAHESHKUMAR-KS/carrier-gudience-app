@@ -9,7 +9,7 @@ function StudentProfile() {
   // Initialize form with default values
   const [formData, setFormData] = useState({
     userType: 'school', // 'school' or 'college'
-    name: currentUser?.displayName || '',
+    name: currentUser?.displayName || currentUser?.name || '',
     email: currentUser?.email || '',
     phone: '',
     // School student specific
@@ -35,24 +35,36 @@ function StudentProfile() {
   const [newInterest, setNewInterest] = useState('');
   const [newCollege, setNewCollege] = useState('');
   const [newExam, setNewExam] = useState('');
+  const [message, setMessage] = useState({ type: '', text: '' });
+
+  const storageKey = React.useMemo(() => {
+    const id = currentUser?._id || currentUser?.id || currentUser?.email || 'guest';
+    return `student-profile:${id}`;
+  }, [currentUser]);
 
   // Load user data on component mount
   useEffect(() => {
-    // In a real app, you would fetch this from your API
     const fetchUserData = async () => {
       try {
-        // const response = await fetch(`/api/students/${currentUser.uid}`);
-        // const data = await response.json();
-        // setFormData(data);
+        // Load from localStorage first (until backend is wired)
+        const raw = localStorage.getItem(storageKey);
+        if (raw) {
+          const saved = JSON.parse(raw);
+          setFormData((prev) => ({ ...prev, ...saved }));
+        } else {
+          // fallback to user details for name/email
+          setFormData((prev) => ({
+            ...prev,
+            name: prev.name || currentUser?.displayName || currentUser?.name || '',
+            email: prev.email || currentUser?.email || '',
+          }));
+        }
       } catch (error) {
-        console.error('Error fetching user data:', error);
+        console.error('Error loading profile:', error);
       }
     };
-    
-    if (currentUser) {
-      fetchUserData();
-    }
-  }, [currentUser]);
+    if (currentUser) fetchUserData();
+  }, [currentUser, storageKey]);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -62,17 +74,17 @@ function StudentProfile() {
     }));
   };
 
-  const addItem = (type) => {
+  const addListItem = (key, valueSetter) => {
     return (e) => {
       e.preventDefault();
-      const value = e.target[0].value.trim();
-      if (value) {
-        setFormData(prev => ({
-          ...prev,
-          [type]: [...prev[type], value]
-        }));
-        e.target.reset();
-      }
+      const value = (key === 'preferredColleges' ? newCollege : key === 'preferredExams' ? newExam : key === 'skills' ? newSkill : newInterest).trim();
+      if (!value) return;
+      setFormData(prev => ({ ...prev, [key]: prev[key].includes(value) ? prev[key] : [...prev[key], value] }));
+      // clear specific input
+      if (key === 'skills') valueSetter('');
+      if (key === 'interests') valueSetter('');
+      if (key === 'preferredColleges') valueSetter('');
+      if (key === 'preferredExams') valueSetter('');
     };
   };
 
@@ -83,18 +95,40 @@ function StudentProfile() {
     }));
   };
 
+  const validate = () => {
+    const issues = [];
+    if (!formData.name.trim()) issues.push('Name is required');
+    if (!formData.email.trim()) issues.push('Email is required');
+    if (formData.phone && !/^\+?\d{10,15}$/.test(formData.phone)) issues.push('Phone must be 10-15 digits (optionally prefixed by +)');
+    if (formData.userType === 'college' && !formData.collegeName.trim()) issues.push('College name is required for college students');
+    return issues;
+  };
+
+  const persist = (data) => {
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(data));
+    } catch (e) {
+      console.warn('Local storage not available');
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const issues = validate();
+    if (issues.length) {
+      setMessage({ type: 'error', text: issues.join(' • ') });
+      return;
+    }
     try {
-      // In a real app, you would save this to your API
-      // await fetch(`/api/students/${currentUser.uid}`, {
-      //   method: 'PUT',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(formData)
-      // });
+      // TODO: Wire up backend persistence when endpoint is available
+      persist(formData);
       setIsEditing(false);
+      setMessage({ type: 'success', text: 'Profile saved locally.' });
+      // Scroll to top so the user sees the reflected summary and banner
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (error) {
       console.error('Error updating profile:', error);
+      setMessage({ type: 'error', text: 'Failed to save profile.' });
     }
   };
 
@@ -226,16 +260,24 @@ function StudentProfile() {
             {isEditing ? 'Edit Profile' : 'My Profile'}
           </h1>
           {!isEditing ? (
-            <button
-              onClick={() => setIsEditing(true)}
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
-            >
-              Edit Profile
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setIsEditing(true)}
+                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+              >
+                Edit Profile
+              </button>
+              <button
+                onClick={handleLogout}
+                className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition"
+              >
+                Logout
+              </button>
+            </div>
           ) : (
             <div className="space-x-2">
               <button
-                onClick={() => setIsEditing(false)}
+                onClick={() => { setIsEditing(false); setMessage({ type: '', text: '' }); }}
                 className="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300 transition"
               >
                 Cancel
@@ -250,7 +292,100 @@ function StudentProfile() {
           )}
         </div>
 
-        <div className="border-t pt-6">
+        {message.text && (
+          <div className={`mb-4 p-3 rounded ${message.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'}`}>
+            {message.text}
+          </div>
+        )}
+
+        {/* Read-only summary to reflect saved profile when not editing */}
+        {!isEditing && (
+          <div className="mb-6 rounded-lg border border-gray-200 bg-gray-50 p-4">
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-gray-500">Name</p>
+                <p className="font-medium text-gray-900">{formData.name || '—'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Email</p>
+                <p className="font-medium text-gray-900">{formData.email || '—'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Phone</p>
+                <p className="font-medium text-gray-900">{formData.phone || '—'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Type</p>
+                <p className="font-medium text-gray-900 capitalize">{formData.userType}</p>
+              </div>
+              {formData.userType === 'school' ? (
+                <>
+                  <div>
+                    <p className="text-sm text-gray-500">Grade</p>
+                    <p className="font-medium text-gray-900">{formData.grade}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Stream</p>
+                    <p className="font-medium text-gray-900">{formData.stream}</p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <p className="text-sm text-gray-500">College</p>
+                    <p className="font-medium text-gray-900">{formData.collegeName || '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Degree / Major</p>
+                    <p className="font-medium text-gray-900">{[formData.degree, formData.major].filter(Boolean).join(' — ') || '—'}</p>
+                  </div>
+                </>
+              )}
+              <div className="md:col-span-2">
+                <p className="text-sm text-gray-500">Career Goals</p>
+                <p className="font-medium text-gray-900 whitespace-pre-wrap">{formData.careerGoals || '—'}</p>
+              </div>
+              <div className="md:col-span-2">
+                <p className="text-sm text-gray-500">Strengths</p>
+                <p className="font-medium text-gray-900 whitespace-pre-wrap">{formData.strengths || '—'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Skills</p>
+                <div className="flex flex-wrap gap-2">
+                  {formData.skills.length ? formData.skills.map((s, i) => (
+                    <span key={i} className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">{s}</span>
+                  )) : <span className="text-gray-500 text-sm">—</span>}
+                </div>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Interests</p>
+                <div className="flex flex-wrap gap-2">
+                  {formData.interests.length ? formData.interests.map((s, i) => (
+                    <span key={i} className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">{s}</span>
+                  )) : <span className="text-gray-500 text-sm">—</span>}
+                </div>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Preferred Colleges</p>
+                <div className="flex flex-wrap gap-2">
+                  {formData.preferredColleges.length ? formData.preferredColleges.map((s, i) => (
+                    <span key={i} className="bg-purple-100 text-purple-800 text-xs font-medium px-2.5 py-0.5 rounded">{s}</span>
+                  )) : <span className="text-gray-500 text-sm">—</span>}
+                </div>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Preferred Exams</p>
+                <div className="flex flex-wrap gap-2">
+                  {formData.preferredExams.length ? formData.preferredExams.map((s, i) => (
+                    <span key={i} className="bg-orange-100 text-orange-800 text-xs font-medium px-2.5 py-0.5 rounded">{s}</span>
+                  )) : <span className="text-gray-500 text-sm">—</span>}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className={`border-t pt-6 ${!isEditing ? 'hidden' : ''}`}>
           <h2 className="text-xl font-semibold mb-4">Basic Information</h2>
           
           <div className="mb-6">
@@ -377,33 +512,14 @@ function StudentProfile() {
                   type="text"
                   className="flex-1 p-2 border rounded-l"
                   placeholder="Add a skill"
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      if (e.target.value.trim()) {
-                        setFormData(prev => ({
-                          ...prev,
-                          skills: [...prev.skills, e.target.value.trim()]
-                        }));
-                        e.target.value = '';
-                      }
-                    }
-                  }}
+                  value={newSkill}
+                  onChange={(e) => setNewSkill(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && isEditing) { e.preventDefault(); addListItem('skills', setNewSkill)(e); } }}
                   disabled={!isEditing}
                 />
                 <button
                   className="bg-blue-500 text-white px-3 py-2 rounded-r"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    const input = e.target.previousSibling;
-                    if (input.value.trim()) {
-                      setFormData(prev => ({
-                        ...prev,
-                        skills: [...prev.skills, input.value.trim()]
-                      }));
-                      input.value = '';
-                    }
-                  }}
+                  onClick={addListItem('skills', setNewSkill)}
                   disabled={!isEditing}
                 >
                   Add
@@ -435,33 +551,14 @@ function StudentProfile() {
                   type="text"
                   className="flex-1 p-2 border rounded-l"
                   placeholder="Add an interest"
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      if (e.target.value.trim()) {
-                        setFormData(prev => ({
-                          ...prev,
-                          interests: [...prev.interests, e.target.value.trim()]
-                        }));
-                        e.target.value = '';
-                      }
-                    }
-                  }}
+                  value={newInterest}
+                  onChange={(e) => setNewInterest(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && isEditing) { e.preventDefault(); addListItem('interests', setNewInterest)(e); } }}
                   disabled={!isEditing}
                 />
                 <button
                   className="bg-green-500 text-white px-3 py-2 rounded-r"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    const input = e.target.previousSibling;
-                    if (input.value.trim()) {
-                      setFormData(prev => ({
-                        ...prev,
-                        interests: [...prev.interests, input.value.trim()]
-                      }));
-                      input.value = '';
-                    }
-                  }}
+                  onClick={addListItem('interests', setNewInterest)}
                   disabled={!isEditing}
                 >
                   Add
@@ -485,13 +582,93 @@ function StudentProfile() {
             </div>
           </div>
 
-          <div className="mt-8 pt-6 border-t">
-            <button
-              onClick={handleLogout}
-              className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition"
-            >
-              Logout
-            </button>
+          <div className="grid md:grid-cols-2 gap-6 mt-6">
+            <div>
+              <label className="block text-gray-700 text-sm font-bold mb-2">Preferred Colleges</label>
+              <div className="flex items-center mb-2">
+                <input
+                  type="text"
+                  className="flex-1 p-2 border rounded-l"
+                  placeholder="Add a college"
+                  value={newCollege}
+                  onChange={(e) => setNewCollege(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && isEditing) { e.preventDefault(); addListItem('preferredColleges', setNewCollege)(e); } }}
+                  disabled={!isEditing}
+                />
+                <button
+                  className="bg-purple-500 text-white px-3 py-2 rounded-r"
+                  onClick={addListItem('preferredColleges', setNewCollege)}
+                  disabled={!isEditing}
+                >
+                  Add
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {formData.preferredColleges.map((item, index) => (
+                  <span key={index} className="bg-purple-100 text-purple-800 text-xs font-medium px-2.5 py-0.5 rounded flex items-center">
+                    {item}
+                    {isEditing && (
+                      <button
+                        onClick={() => removeItem('preferredColleges', index)}
+                        className="ml-1.5 text-purple-600 hover:text-purple-900"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="block text-gray-700 text-sm font-bold mb-2">Preferred Exams</label>
+              <div className="flex items-center mb-2">
+                <input
+                  type="text"
+                  className="flex-1 p-2 border rounded-l"
+                  placeholder="Add an exam (e.g., JEE, TNEA)"
+                  value={newExam}
+                  onChange={(e) => setNewExam(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && isEditing) { e.preventDefault(); addListItem('preferredExams', setNewExam)(e); } }}
+                  disabled={!isEditing}
+                />
+                <button
+                  className="bg-orange-500 text-white px-3 py-2 rounded-r"
+                  onClick={addListItem('preferredExams', setNewExam)}
+                  disabled={!isEditing}
+                >
+                  Add
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {formData.preferredExams.map((item, index) => (
+                  <span key={index} className="bg-orange-100 text-orange-800 text-xs font-medium px-2.5 py-0.5 rounded flex items-center">
+                    {item}
+                    {isEditing && (
+                      <button
+                        onClick={() => removeItem('preferredExams', index)}
+                        className="ml-1.5 text-orange-600 hover:text-orange-900"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-8 pt-6 border-t flex items-center justify-between">
+            <div>
+              <button
+                onClick={handleLogout}
+                className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition"
+              >
+                Logout
+              </button>
+            </div>
+            <div className="text-xs text-gray-500">
+              {message.type === 'success' ? 'Saved locally' : ''}
+            </div>
           </div>
         </div>
       </div>

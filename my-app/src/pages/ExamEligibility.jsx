@@ -114,7 +114,8 @@ export default function ExamEligibility() {
         </div>
 
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-10">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
+          {/* Align inputs and button nicely across breakpoints */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">Overall Percentage (0-100)</label>
               <input
@@ -132,7 +133,7 @@ export default function ExamEligibility() {
                 <label htmlFor="adv" className="text-sm text-gray-700">Use weighted subjects (Maths 50%, Physics 25%, Chemistry 25%)</label>
               </div>
             </div>
-            <div className="flex md:justify-start justify-center">
+            <div className="flex md:justify-start justify-center md:items-center">
               <button
                 onClick={handleExamSearch}
                 disabled={examLoading}
@@ -254,5 +255,3 @@ export default function ExamEligibility() {
     </div>
   );
 }
-
-

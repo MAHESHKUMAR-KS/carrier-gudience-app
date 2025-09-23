@@ -22,7 +22,6 @@ const Navbar = () => {
     { href: '/careers', label: 'Careers' },
     { href: '/college-search', label: 'College Search' },
     { href: '/exam-eligibility', label: 'Exam Eligibility' },
-    { href: '/chatbot', label: 'AI Assistant' },
     { href: '/profile', label: 'My Profile' },
   ];
 

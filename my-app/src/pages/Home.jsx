@@ -19,19 +19,47 @@ export default function HomePage() {
             </p>
             <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4">
               <Link
-                to={currentUser ? "/college-finder" : "/signup"}
+                to={currentUser ? "/college-search" : "/signup"}
                 className="px-6 py-2.5 bg-white text-blue-600 font-medium rounded-md hover:bg-blue-50 transition-colors"
               >
                 {currentUser ? 'Find Colleges' : 'Get Started Free'}
               </Link>
-              <Link
-                to="/chatbot"
-                className="px-6 py-2.5 bg-blue-500 text-white border border-blue-400 font-medium rounded-md hover:bg-blue-600 transition-colors"
-              >
-                Ask CareerBot
-              </Link>
+              {currentUser && (
+                <Link
+                  to="/careers"
+                  className="px-6 py-2.5 bg-blue-500 text-white border border-blue-400 font-medium rounded-md hover:bg-blue-600 transition-colors"
+                >
+                  Explore Careers
+                </Link>
+              )}
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="py-10">
+        <div className="max-w-5xl mx-auto px-4 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <Link to="/college-search" className="group bg-white rounded-lg border border-gray-200 p-5 hover:shadow-md transition">
+            <h3 className="font-semibold text-gray-900">College Search</h3>
+            <p className="mt-1 text-sm text-gray-600">Filter by community, cutoff, and location.</p>
+            <span className="inline-block mt-3 text-indigo-600 text-sm group-hover:underline">Find now →</span>
+          </Link>
+          <Link to="/careers" className="group bg-white rounded-lg border border-gray-200 p-5 hover:shadow-md transition">
+            <h3 className="font-semibold text-gray-900">Careers & Roadmaps</h3>
+            <p className="mt-1 text-sm text-gray-600">Pick a role and generate a 60‑day plan.</p>
+            <span className="inline-block mt-3 text-indigo-600 text-sm group-hover:underline">Explore →</span>
+          </Link>
+          <Link to="/exam-eligibility" className="group bg-white rounded-lg border border-gray-200 p-5 hover:shadow-md transition">
+            <h3 className="font-semibold text-gray-900">Exam Eligibility</h3>
+            <p className="mt-1 text-sm text-gray-600">Check eligibility based on your profile.</p>
+            <span className="inline-block mt-3 text-indigo-600 text-sm group-hover:underline">Check now →</span>
+          </Link>
+          <Link to="/profile" className="group bg-white rounded-lg border border-gray-200 p-5 hover:shadow-md transition">
+            <h3 className="font-semibold text-gray-900">My Profile</h3>
+            <p className="mt-1 text-sm text-gray-600">Update your details and preferences.</p>
+            <span className="inline-block mt-3 text-indigo-600 text-sm group-hover:underline">Open →</span>
+          </Link>
         </div>
       </div>
 
@@ -86,7 +114,7 @@ export default function HomePage() {
             Join thousands of students who have found their perfect college match with our platform.
           </p>
           <Link
-            to={currentUser ? "/college-finder" : "/signup"}
+            to={currentUser ? "/college-search" : "/signup"}
             className="inline-block bg-white text-blue-700 px-6 py-2.5 rounded-md font-medium hover:bg-blue-50 transition-colors"
           >
             {currentUser ? 'Start Searching' : 'Create Free Account'}

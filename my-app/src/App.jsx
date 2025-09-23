@@ -9,7 +9,7 @@ import CollegeRecommendation from './pages/CollegeRecommendation';
 import CollegeSearch from './pages/CollegeSearch';
 import ExamEligibility from './pages/ExamEligibility';
 import StudentProfile from './pages/StudentProfile';
-import Chatbot from './pages/Chatbot';
+import ChatbotWidget from './components/Chatbot';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 
@@ -57,15 +57,11 @@ const AppLayout = () => (
           </ProtectedRoute>
         } />
         
-        <Route path="/chatbot" element={
-          <ProtectedRoute>
-            <Chatbot />
-          </ProtectedRoute>
-        } />
-        
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </main>
+    {/* Floating chatbot widget rendered globally */}
+    <ChatbotWidget />
   </div>
 );
 

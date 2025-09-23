@@ -29,6 +29,25 @@ export const searchCollegesByCutoff = async (req, res) => {
     const normalizedCourse = course.toLowerCase().replace(/[^a-z0-9]/g, '');
     const resolvedCity = location?.trim();
 
+    // Build a branch/course regex for Excel source
+    const courseRegexMap = {
+      // treat 'btech' as any engineering
+      btech: null,
+      be: null,
+      cse: /(computer\s*science|c\.?s\.?e\.?)/i,
+      it: /(information\s*technology|\bit\b)/i,
+      ece: /(electronics?\s*(and|&)\s*communication|e\.?c\.?e\.?(\b|$))/i,
+      eee: /(electrical\s*(and|&)\s*electronics|e\.?e\.?e\.?(\b|$))/i,
+      mech: /(mechanical)/i,
+      civil: /(civil)/i,
+      ai: /(artificial\s*intelligence|ai\s*&?\s*ml|ai\/?ml)/i,
+      aiml: /(ai\s*&?\s*ml|artificial\s*intelligence\s*&?\s*machine\s*learning)/i,
+      data: /(data\s*science|data\s*engineering)/i,
+    };
+    const branchRegex = Object.prototype.hasOwnProperty.call(courseRegexMap, normalizedCourse)
+      ? courseRegexMap[normalizedCourse]
+      : (normalizedCourse && normalizedCourse !== 'btech' ? new RegExp(normalizedCourse, 'i') : null);
+
     // ---------- Excel source ----------
     if (source === 'excel') {
       const dataPath = path.join(process.cwd(), 'data', 'college_search.json');
@@ -39,18 +58,16 @@ export const searchCollegesByCutoff = async (req, res) => {
 
         const filtered = json
           .filter(c => {
-            // Check if college name contains the city (since location is in college name)
+            // Optional location filter: college name contains city substring
             const locationMatch = !cityRegex || cityRegex.test(c['COLLEGE NAME']);
-            // Check if the specific community cutoff exists and user marks are >= cutoff
+            // Optional course/branch filter: branch name matches derived regex
+            const branchName = c['BRANCH NAME'] || '';
+            const branchMatch = !branchRegex || branchRegex.test(branchName);
+            // Community cutoff check
             const communityCutoff = c[dbCommunity.toUpperCase()];
             const cutoffMatch = communityCutoff !== null && communityCutoff !== undefined && marksNum >= parseFloat(communityCutoff);
-            return locationMatch && cutoffMatch;
+            return locationMatch && branchMatch && cutoffMatch;
           });
-
-        console.log('Filtered Excel results count:', filtered.length);
-        console.log('Sample filtered result:', filtered[0]);
-        console.log('Community being searched:', dbCommunity);
-        console.log('Marks being searched:', marksNum);
 
         const limited = filtered
           .map(c => {
@@ -61,9 +78,9 @@ export const searchCollegesByCutoff = async (req, res) => {
               location: c['COLLEGE NAME'], // Location is embedded in college name
               cutoff: parseFloat(communityCutoff || 0),
               fees: 0, // Not available in your data
-              course: c['BRANCH NAME'],
+              course: (c['BRANCH NAME'] || '').toUpperCase(),
               community: dbCommunity.toUpperCase(),
-              specializations: [c['BRANCH NAME']],
+              specializations: [c['BRANCH NAME']].filter(Boolean),
               isEligible: marksNum >= parseFloat(communityCutoff || Infinity),
               difference: parseFloat((marksNum - (parseFloat(communityCutoff) || 0)).toFixed(2)),
               website: '',
@@ -110,8 +127,6 @@ export const searchCollegesByCutoff = async (req, res) => {
         };
       })
       .filter(Boolean);
-
-    console.log('Final mapped results:', results);
 
     return res.status(200).json({ status: 'success', results: results.length, data: results });
 
