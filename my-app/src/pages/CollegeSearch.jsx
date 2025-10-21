@@ -134,9 +134,9 @@ export default function CollegeSearch() {
                 <option value="eee">EEE (Electrical & Electronics)</option>
                 <option value="mech">Mechanical Engineering</option>
                 <option value="civil">Civil Engineering</option>
-                <option value="ai">AI (Artificial Intelligence)</option>
-                <option value="aiml">AI & ML</option>
-                <option value="data">Data Science</option>
+                <option value="ai">AI & DS (Artificial Intelligence & Data Science)</option>
+                <option value="aiml">AI & ML (Artificial Intelligence & Machine Learning)</option>
+               
               </select>
             </div>
             <div className="space-y-2">

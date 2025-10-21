@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { FiEye, FiEyeOff, FiMail, FiLock } from 'react-icons/fi';
+import GoogleSignIn from '../components/GoogleSignIn';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -10,11 +11,18 @@ const Login = () => {
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, isAuthenticated, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   const from = location.state?.from?.pathname || '/';
+
+  // Redirect authenticated users to dashboard
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, authLoading, navigate]);
 
   // Show success message if redirected from signup
   useEffect(() => {
@@ -40,7 +48,7 @@ const Login = () => {
       
       if (result.success) {
         // Redirect to the intended page or dashboard
-        const redirectPath = from === '/' ? '/dashboard' : from;
+        const redirectPath = from === '/' || from === '/login' ? '/dashboard' : from;
         navigate(redirectPath, { replace: true });
       } else {
         setError(result.message || 'Failed to log in. Please try again.');
@@ -52,6 +60,20 @@ const Login = () => {
       setIsLoading(false);
     }
   };
+
+  // Show loading spinner while checking authentication
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+      </div>
+    );
+  }
+
+  // Don't render login form if user is authenticated (they'll be redirected)
+  if (isAuthenticated) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -178,6 +200,33 @@ const Login = () => {
             </button>
           </div>
         </form>
+
+        {/* Divider */}
+        <div className="mt-6">
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300" />
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-gray-50 text-gray-500">Or continue with</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Google Sign-In */}
+        <div className="mt-6">
+          <GoogleSignIn 
+            onSuccess={(data) => {
+              console.log('Google sign-in successful:', data);
+              // Force page reload to update auth context
+              window.location.href = '/dashboard';
+            }}
+            onError={(error) => {
+              console.error('Google sign-in error:', error);
+              setError('Google sign-in failed. Please try again.');
+            }}
+          />
+        </div>
       </div>
     </div>
   );

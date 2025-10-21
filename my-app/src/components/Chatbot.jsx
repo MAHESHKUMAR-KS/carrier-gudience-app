@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 
 function Chatbot() {
+  const { isAuthenticated, isLoading } = useAuth();
   const [messages, setMessages] = useState([
     { id: 1, text: 'Hello! How can I help you with your career or education today?', sender: 'bot' }
   ]);
@@ -61,6 +63,11 @@ function Chatbot() {
       setLoading(false);
     }
   };
+
+  // Only show chatbot for authenticated users
+  if (isLoading || !isAuthenticated) {
+    return null;
+  }
 
   return (
     <div className="fixed bottom-6 right-6 z-50">

@@ -10,7 +10,16 @@ const Navbar = () => {
   const pillRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAuthenticated, logout } = useAuth();
+  const { isAuthenticated, logout, currentUser } = useAuth();
+
+  // Build a friendly display name
+  const greetingName = (() => {
+    const name = currentUser?.displayName || currentUser?.name;
+    if (name && String(name).trim()) return name;
+    const email = currentUser?.email || '';
+    if (email.includes('@')) return email.split('@')[0];
+    return 'there';
+  })();
 
   const handleLogout = () => {
     logout();
@@ -18,7 +27,7 @@ const Navbar = () => {
   };
 
   const navItems = [
-    { href: '/', label: 'Home' },
+    { href: '/dashboard', label: 'Home' },
     { href: '/careers', label: 'Careers' },
     { href: '/college-search', label: 'College Search' },
     { href: '/exam-eligibility', label: 'Exam Eligibility' },
@@ -128,6 +137,8 @@ const Navbar = () => {
                   {item.label}
                 </NavLink>
               ))}
+              {/* Greeting */}
+              <span className="ml-4 mr-2 px-3 py-1 rounded-full text-sm font-medium text-white bg-white/10 whitespace-nowrap">Hi, {greetingName}</span>
               <button
                 onClick={handleLogout}
                 className="ml-2 px-4 py-2 rounded-full text-sm font-medium text-white bg-red-600 hover:bg-red-700 transition-colors duration-200"
@@ -162,6 +173,7 @@ const Navbar = () => {
       {isOpen && (
         <div className="md:hidden bg-indigo-800 shadow-lg rounded-b-lg">
           <div className="px-2 pt-2 pb-3 space-y-1">
+            <div className="px-3 py-2 text-sm font-medium text-gray-200">Hi, {greetingName}</div>
             {navItems.map((item) => (
               <NavLink
                 key={item.href}

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Routes, Route, Navigate, createBrowserRouter, RouterProvider } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
@@ -13,6 +13,25 @@ import ChatbotWidget from './components/Chatbot';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 
+// Component to handle root route based on authentication
+const RootRoute = () => {
+  const { isAuthenticated, isLoading } = useAuth();
+  
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+      </div>
+    );
+  }
+  
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  
+  return <Login />;
+};
+
 // Main application layout component
 const AppLayout = () => (
   <div className="min-h-screen bg-white">
@@ -22,8 +41,11 @@ const AppLayout = () => (
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         
+        {/* Default landing page - shows login or redirects to dashboard */}
+        <Route path="/" element={<RootRoute />} />
+        
         {/* Protected Routes */}
-        <Route path="/" element={
+        <Route path="/dashboard" element={
           <ProtectedRoute>
             <Home />
           </ProtectedRoute>
