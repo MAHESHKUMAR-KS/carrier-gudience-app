@@ -10,7 +10,7 @@ const Navbar = () => {
   const pillRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAuthenticated, logout } = useAuth();
+  const { isAuthenticated, logout, user } = useAuth();
 
   const handleLogout = () => {
     logout();
@@ -128,6 +128,17 @@ const Navbar = () => {
                   {item.label}
                 </NavLink>
               ))}
+              {/* User display */}
+              {user && (
+                <div className="flex items-center ml-4 mr-2 text-white">
+                  <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center mr-2 uppercase font-semibold">
+                    {user.name?.[0] || user.email?.[0] || 'U'}
+                  </div>
+                  <span className="text-sm font-medium truncate max-w-[160px]" title={user.name || user.email}>
+                    {user.name || user.email}
+                  </span>
+                </div>
+              )}
               <button
                 onClick={handleLogout}
                 className="ml-2 px-4 py-2 rounded-full text-sm font-medium text-white bg-red-600 hover:bg-red-700 transition-colors duration-200"

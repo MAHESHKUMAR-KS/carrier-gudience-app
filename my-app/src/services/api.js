@@ -34,6 +34,22 @@ export const authAPI = {
     }
   },
 
+  googleLogin: async (credential) => {
+    try {
+      const response = await api.post('/google', { credential });
+      if (response.data.token) {
+        localStorage.setItem('token', response.data.token);
+        localStorage.setItem('user', JSON.stringify(response.data.data.user));
+      }
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Google login failed. Please try again.'
+      };
+    }
+  },
+
   signup: async (userData) => {
     try {
       const response = await api.post('/signup', userData);

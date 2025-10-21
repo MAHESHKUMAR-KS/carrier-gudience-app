@@ -9,6 +9,7 @@ const AuthContext = createContext({
   login: () => {},
   signup: () => {},
   logout: () => {},
+  googleLogin: () => {},
 });
 
 export const AuthProvider = ({ children }) => {
@@ -49,6 +50,14 @@ export const AuthProvider = ({ children }) => {
     return result;
   };
 
+  const googleLogin = async (credential) => {
+    const result = await authAPI.googleLogin(credential);
+    if (result.success) {
+      setUser(authAPI.getCurrentUser());
+    }
+    return result;
+  };
+
   const logout = () => {
     authAPI.logout();
     setUser(null);
@@ -65,6 +74,7 @@ export const AuthProvider = ({ children }) => {
         login,
         signup,
         logout,
+        googleLogin,
       }}
     >
       {!isLoading && children}

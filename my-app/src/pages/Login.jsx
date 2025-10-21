@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { FiEye, FiEyeOff, FiMail, FiLock } from 'react-icons/fi';
+import { GoogleLogin } from '@react-oauth/google';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -10,7 +11,7 @@ const Login = () => {
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, googleLogin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -178,6 +179,28 @@ const Login = () => {
             </button>
           </div>
         </form>
+        {/* Google Login */}
+        <div className="mt-6 flex justify-center">
+          <GoogleLogin
+            onSuccess={async (credentialResponse) => {
+              try {
+                const cred = credentialResponse?.credential;
+                if (!cred) return setError('Google login failed: missing credential');
+                const result = await googleLogin(cred);
+                if (result.success) {
+                  const redirectPath = from === '/' ? '/dashboard' : from;
+                  navigate(redirectPath, { replace: true });
+                } else {
+                  setError(result.message || 'Google login failed. Please try again.');
+                }
+              } catch (e) {
+                setError('Google login failed. Please try again.');
+              }
+            }}
+            onError={() => setError('Google login failed. Please try again.')}
+            useOneTap
+          />
+        </div>
       </div>
     </div>
   );

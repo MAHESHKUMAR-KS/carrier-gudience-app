@@ -1,11 +1,12 @@
 import express from 'express';
-import { signup, login, protect, restrictTo } from '../controllers/authController.js';
+import { signup, login, protect, restrictTo, googleLogin } from '../controllers/authController.js';
 
 const router = express.Router();
 
 // Public routes
 router.post('/signup', signup);
 router.post('/login', login);
+router.post('/google', googleLogin);
 
 // Example protected route
 router.get('/me', protect, (req, res) => {

@@ -1,8 +1,11 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import dotenv from 'dotenv';
+import { OAuth2Client } from 'google-auth-library';
 
 dotenv.config();
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // Generate JWT
 const signToken = (id) => {
@@ -124,4 +127,51 @@ export const restrictTo = (...roles) => {
     }
     next();
   };
+};
+
+// GOOGLE LOGIN
+export const googleLogin = async (req, res) => {
+  try {
+    const { credential } = req.body; // id_token from Google
+    if (!credential) {
+      return res.status(400).json({ status: 'fail', message: 'Missing Google credential' });
+    }
+
+    // Verify the id_token
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    const { sub: googleId, email, name, picture, email_verified } = payload || {};
+
+    if (!email || !email_verified) {
+      return res.status(401).json({ status: 'fail', message: 'Google email not verified' });
+    }
+
+    // Find or create user
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      user = await User.create({
+        name: name || email.split('@')[0],
+        email,
+        provider: 'google',
+        googleId,
+        picture,
+      });
+    } else if (user.provider !== 'google') {
+      // If existing local user logs in via Google, mark provider & googleId
+      user.provider = 'google';
+      user.googleId = user.googleId || googleId;
+      user.picture = user.picture || picture;
+      await user.save({ validateBeforeSave: false });
+    }
+
+    createSendToken(user, 200, res);
+  } catch (err) {
+    console.error('Google login error:', err);
+    res.status(401).json({ status: 'fail', message: 'Invalid Google credential' });
+  }
 };
