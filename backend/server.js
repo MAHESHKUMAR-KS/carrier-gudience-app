@@ -6,7 +6,6 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import morgan from 'morgan';
-
 import careerRouter from './routes/careerRoutes.js';
 import chatbotRouter from './chatbot.js';
 import authRouter from './routes/authRoutes.js';
@@ -28,7 +27,7 @@ if (process.env.NODE_ENV === 'development') {
 
 // CORS
 app.use(cors({
-  origin: ["http://localhost:5173", "http://localhost:5174"],
+  origin: ["http://localhost:5174", "http://localhost:5175", "http://localhost:5176"],
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true
@@ -38,7 +37,7 @@ app.use(cors({
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
-// GLOBAL CACHE-CONTROL
+// ✅ GLOBAL CACHE-CONTROL
 app.use((req, res, next) => {
   res.set('Cache-Control', 'no-store'); // Prevent browser caching for all routes
   next();
@@ -99,3 +98,4 @@ process.on('unhandledRejection', (err, promise) => {
   console.error(`Error: ${err.message}`);
   server.close(() => process.exit(1));
 });
+

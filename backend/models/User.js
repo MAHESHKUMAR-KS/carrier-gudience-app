@@ -17,7 +17,9 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: [true, 'Please provide a password'],
+    required: function() {
+      return !this.isGoogleUser;
+    },
     minlength: 6,
     select: false
   },
@@ -25,6 +27,14 @@ const userSchema = new mongoose.Schema({
     type: String,
     enum: ['user', 'admin'],
     default: 'user'
+  },
+  isGoogleUser: {
+    type: Boolean,
+    default: false
+  },
+  profilePicture: {
+    type: String,
+    default: ''
   },
   createdAt: {
     type: Date,
@@ -34,7 +44,7 @@ const userSchema = new mongoose.Schema({
 
 // Hash password before saving
 userSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next();
+  if (!this.isModified('password') || this.isGoogleUser) return next();
   
   try {
     const salt = await bcrypt.genSalt(10);
