@@ -225,3 +225,20 @@ p {
   white-space: nowrap;
   border: 0;
 }
+
+/* Custom styles for Google Login Button */
+.google-login-container {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.google-login-container > div {
+  width: 100% !important;
+  display: flex;
+  justify-content: center;
+}
+
+.google-login-container iframe {
+  margin: 0 auto;
+}

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Routes, Route, Navigate, createBrowserRouter, RouterProvider } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
@@ -14,56 +14,60 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 
 // Main application layout component
-const AppLayout = () => (
-  <div className="min-h-screen bg-white">
-    <Navbar />
-    <main className="pt-16">
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        
-        {/* Protected Routes */}
-        <Route path="/" element={
-          <ProtectedRoute>
-            <Home />
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/careers" element={
-          <ProtectedRoute>
-            <Careers />
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/college-recommendation" element={
-          <ProtectedRoute>
-            <CollegeRecommendation />
-          </ProtectedRoute>
-        } />
-        <Route path="/college-search" element={
-          <ProtectedRoute>
-            <CollegeSearch />
-          </ProtectedRoute>
-        } />
-        <Route path="/exam-eligibility" element={
-          <ProtectedRoute>
-            <ExamEligibility />
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/profile" element={
-          <ProtectedRoute>
-            <StudentProfile />
-          </ProtectedRoute>
-        } />
-        
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </main>
-    {/* Floating chatbot widget rendered globally */}
-    <ChatbotWidget />
-  </div>
-);
+const AppLayout = () => {
+  const { user } = useAuth(); // Get user from auth context
+
+  return (
+    <div className="min-h-screen bg-white">
+      <Navbar />
+      <main className="pt-16">
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          
+          {/* Protected Routes */}
+          <Route path="/" element={
+            <ProtectedRoute>
+              <Home />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/careers" element={
+            <ProtectedRoute>
+              <Careers />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/college-recommendation" element={
+            <ProtectedRoute>
+              <CollegeRecommendation />
+            </ProtectedRoute>
+          } />
+          <Route path="/college-search" element={
+            <ProtectedRoute>
+              <CollegeSearch />
+            </ProtectedRoute>
+          } />
+          <Route path="/exam-eligibility" element={
+            <ProtectedRoute>
+              <ExamEligibility />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/profile" element={
+            <ProtectedRoute>
+              <StudentProfile />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </main>
+      {/* Floating chatbot widget rendered only for logged-in users */}
+      {user && <ChatbotWidget />}
+    </div>
+  );
+};
 
 // Create router with future flags
 const router = createBrowserRouter([

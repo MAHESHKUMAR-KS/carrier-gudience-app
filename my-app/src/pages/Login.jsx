@@ -178,29 +178,39 @@ const Login = () => {
               {isLoading ? 'Signing in...' : 'Sign in'}
             </button>
           </div>
-        </form>
-        {/* Google Login */}
-        <div className="mt-6 flex justify-center">
-          <GoogleLogin
-            onSuccess={async (credentialResponse) => {
-              try {
-                const cred = credentialResponse?.credential;
-                if (!cred) return setError('Google login failed: missing credential');
-                const result = await googleLogin(cred);
-                if (result.success) {
-                  const redirectPath = from === '/' ? '/dashboard' : from;
-                  navigate(redirectPath, { replace: true });
-                } else {
-                  setError(result.message || 'Google login failed. Please try again.');
+          <div className="mt-6">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-gray-50 text-gray-500">Or continue with</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="google-login-container">
+            <GoogleLogin
+              onSuccess={async (credentialResponse) => {
+                try {
+                  const cred = credentialResponse?.credential;
+                  if (!cred) return setError('Google login failed: missing credential');
+                  const result = await googleLogin(cred);
+                  if (result.success) {
+                    const redirectPath = from === '/' ? '/dashboard' : from;
+                    navigate(redirectPath, { replace: true });
+                  } else {
+                    setError(result.message || 'Google login failed. Please try again.');
+                  }
+                } catch (e) {
+                  setError('Google login failed. Please try again.');
                 }
-              } catch (e) {
-                setError('Google login failed. Please try again.');
-              }
-            }}
-            onError={() => setError('Google login failed. Please try again.')}
-            useOneTap
-          />
-        </div>
+              }}
+              onError={() => setError('Google login failed. Please try again.')}
+              useOneTap
+            />
+          </div>
+        </form>
       </div>
     </div>
   );
