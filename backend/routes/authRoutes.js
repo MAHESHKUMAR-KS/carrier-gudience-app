@@ -16,7 +16,7 @@ router.get('/me', protect, (req, res) => {
   });
 });
 
-// Example admin-only route
+
 router.get('/admin-only', protect, restrictTo('admin'), (req, res) => {
   res.status(200).json({
     status: 'success',

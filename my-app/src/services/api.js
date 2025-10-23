@@ -54,7 +54,7 @@ export const authAPI = {
     try {
       const response = await api.post('/signup', userData);
       if (response.data) {
-        // Just return success without logging in
+      
         return { 
           success: true, 
           message: 'Signup successful! Please log in.'
