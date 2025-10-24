@@ -29,7 +29,7 @@ export default function CollegeRecommendation() {
     return null;
   };
 
-  // Search colleges
+  
   const handleSearch = async () => {
     const validationError = validateCutoff();
     if (validationError) {
@@ -83,7 +83,7 @@ export default function CollegeRecommendation() {
     }
   };
 
-  // Sort results when sortBy or results change
+  
   useEffect(() => {
     if (!results.length) return;
 
@@ -98,7 +98,7 @@ export default function CollegeRecommendation() {
       case "fees":
         sorted.sort((a, b) => a.fees - b.fees);
         break;
-      default: // relevance (keep original order)
+      default: 
         sorted = [...results];
     }
     setSortedResults(sorted);
