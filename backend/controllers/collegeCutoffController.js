@@ -29,7 +29,6 @@ export const searchCollegesByCutoff = async (req, res) => {
     const normalizedCourse = course.toLowerCase().replace(/[^a-z0-9]/g, '');
     const resolvedCity = location?.trim();
 
-    // Build a branch/course regex for Excel source
     const courseRegexMap = {
       // treat 'btech' as any engineering
       btech: null,
@@ -48,7 +47,7 @@ export const searchCollegesByCutoff = async (req, res) => {
       ? courseRegexMap[normalizedCourse]
       : (normalizedCourse && normalizedCourse !== 'btech' ? new RegExp(normalizedCourse, 'i') : null);
 
-    // ---------- Excel source ----------
+    
     if (source === 'excel') {
       const dataPath = path.join(process.cwd(), 'data', 'college_search.json');
       try {
