@@ -92,3 +92,36 @@ export const authAPI = {
 };
 
 export default api;
+
+// Scholarship API
+export const scholarshipAPI = {
+  getAll: async (filters = {}) => {
+    try {
+      const response = await axios.get('http://localhost:5001/api/scholarships', {
+        params: filters
+      });
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.error || 'Failed to fetch scholarships'
+      };
+    }
+  },
+
+  getByState: async (state) => {
+    return scholarshipAPI.getAll({ state });
+  },
+
+  getByCategory: async (category) => {
+    return scholarshipAPI.getAll({ category });
+  },
+
+  getBySource: async (source) => {
+    return scholarshipAPI.getAll({ source });
+  },
+
+  search: async (query) => {
+    return scholarshipAPI.getAll({ search: query });
+  }
+};

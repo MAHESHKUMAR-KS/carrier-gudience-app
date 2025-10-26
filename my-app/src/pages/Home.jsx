@@ -55,16 +55,67 @@ export default function HomePage() {
             <p className="mt-1 text-sm text-gray-600">Check eligibility based on your profile.</p>
             <span className="inline-block mt-3 text-indigo-600 text-sm group-hover:underline">Check now →</span>
           </Link>
-          <Link to="/profile" className="group bg-white rounded-lg border border-gray-200 p-5 hover:shadow-md transition">
-            <h3 className="font-semibold text-gray-900">My Profile</h3>
-            <p className="mt-1 text-sm text-gray-600">Update your details and preferences.</p>
-            <span className="inline-block mt-3 text-indigo-600 text-sm group-hover:underline">Open →</span>
+<Link to="/scholarships" className="group bg-white rounded-lg border border-gray-200 p-5 hover:shadow-md transition">
+            <h3 className="font-semibold text-gray-900">Scholarships</h3>
+            <p className="mt-1 text-sm text-gray-600">Browse scholarships from trusted sources.</p>
+            <span className="inline-block mt-3 text-indigo-600 text-sm group-hover:underline">Explore →</span>
           </Link>
         </div>
       </div>
 
-      {/* Features Grid */}
+      {/* Scholarship Section */}
       <div className="py-12 bg-white">
+        <div className="max-w-4xl mx-auto px-4">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-gray-900 mb-8">Explore Scholarship Opportunities</h2>
+          </div>
+          <div className="grid md:grid-cols-2 gap-6">
+            {[
+              {
+                name: 'Tamil Nadu Scholarships',
+                description: 'State-specific scholarships for Tamil Nadu students including BC/MBC, SC/ST schemes.',
+                icon: '🏫',
+              },
+              {
+                name: 'All India Scholarships',
+                description: 'National-level scholarships from government and private organizations.',
+                icon: '🇮🇳',
+              },
+              {
+                name: 'Merit-Based Awards',
+                description: 'Scholarships based on academic excellence and competitive exam performance.',
+                icon: '🏆',
+              },
+              {
+                name: 'Category-Specific Support',
+                description: 'Financial aid for SC/ST/OBC/Minority communities and differently-abled students.',
+                icon: '💰',
+              },
+            ].map((feature) => (
+              <div key={feature.name} className="bg-gray-50 p-5 rounded-lg">
+                <div className="flex items-start">
+                  <span className="text-2xl mr-3">{feature.icon}</span>
+                  <div>
+                    <h3 className="font-medium text-gray-900">{feature.name}</h3>
+                    <p className="mt-1 text-sm text-gray-600">{feature.description}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="text-center mt-8">
+            <Link
+              to="/scholarships"
+              className="inline-block bg-indigo-600 text-white px-6 py-2.5 rounded-md font-medium hover:bg-indigo-700 transition-colors"
+            >
+              View All Scholarships
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* Features Grid */}
+      <div className="py-12 bg-gray-50">
         <div className="max-w-4xl mx-auto px-4">
           <div className="text-center">
             <h2 className="text-2xl font-bold text-gray-900 mb-8">Everything you need to find your ideal college</h2>
@@ -92,7 +143,7 @@ export default function HomePage() {
                 icon: '🤖',
               },
             ].map((feature) => (
-              <div key={feature.name} className="bg-gray-50 p-5 rounded-lg">
+              <div key={feature.name} className="bg-white p-5 rounded-lg">
                 <div className="flex items-start">
                   <span className="text-2xl mr-3">{feature.icon}</span>
                   <div>

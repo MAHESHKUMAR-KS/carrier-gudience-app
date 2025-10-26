@@ -6,6 +6,8 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import morgan from 'morgan';
+import cron from 'node-cron';
+import { exec } from 'child_process';
 
 import careerRouter from './routes/careerRoutes.js';
 import chatbotRouter from './chatbot.js';
@@ -13,6 +15,7 @@ import authRouter from './routes/authRoutes.js';
 import collegeCutoffRouter from './routes/collegeCutoffRoutes.js';
 import collegeRouter from './routes/collegeRoutes.js';
 import engineeringExamsRouter from './routes/engineeringExamsRoutes.js';
+import scholarshipRouter from './routes/scholarships.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -62,6 +65,30 @@ app.use('/api/v1/careers', careerRouter);
 app.use('/api/v1/chatbot', chatbotRouter);
 app.use('/api/v1/college-cutoffs', collegeCutoffRouter);
 app.use('/api/v1/engineering-exams', engineeringExamsRouter);
+app.use('/api/scholarships', scholarshipRouter);
+
+// ---------------- CRON JOB FOR SCHOLARSHIP UPDATES ----------------
+// This will run the allScrapers.js script daily at 10:00 AM.
+// Cron format: '0 10 * * *' means "at 10:00 AM every day"
+cron.schedule('0 10 * * *', () => {
+  console.log('⏰ Running daily scholarship aggregation at 10:00 AM...');
+  const scriptPath = path.join(__dirname, 'scripts', 'allScrapers.js');
+
+  exec(`node ${scriptPath}`, (error, stdout, stderr) => {
+    if (error) {
+      console.error(`❌ Cron job error: ${error.message}`);
+      return;
+    }
+    if (stderr) {
+      console.error(`⚠️  Cron job stderr: ${stderr}`);
+      return;
+    }
+    console.log(`✅ Cron job completed:\n${stdout}`);
+  });
+});
+
+console.log('📅 Daily scholarship scraper scheduled for 10:00 AM');
+
 
 // ---------------- HEALTH CHECK ----------------
 app.get('/api/health', (req, res) => {

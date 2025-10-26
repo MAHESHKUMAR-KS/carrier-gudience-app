@@ -41,21 +41,45 @@ function Chatbot() {
       console.log('Response status:', response.status);
       
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Error response:', errorText);
-        throw new Error(`Server responded with ${response.status}: ${errorText}`);
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Error response:', errorData);
+        
+        // Still try to show a helpful message
+        const botMessage = { 
+          id: Date.now() + 1, 
+          text: 'I\'m currently experiencing high demand. Please try again in a moment, or explore our Scholarships, College Search, and Careers pages.', 
+          sender: 'bot',
+          isError: true
+        };
+        setMessages(prev => [...prev, botMessage]);
+        return;
       }
 
       const data = await response.json();
+      
+      // Create bot message
+      let botText = data.reply || 'Sorry, I did not understand that.';
+      
+      // If it's a fallback response, add a note
+      if (data.fallback && data.message) {
+        botText = `ℹ️ ${data.message}\n\n${botText}`;
+      }
+      
       const botMessage = { 
         id: Date.now() + 1, 
-        text: data.reply || 'Sorry, I did not understand that.', 
-        sender: 'bot' 
+        text: botText, 
+        sender: 'bot',
+        isFallback: data.fallback
       };
       setMessages(prev => [...prev, botMessage]);
     } catch (err) {
       console.error('Error fetching bot reply:', err);
-      const botMessage = { id: Date.now() + 1, text: 'Sorry, I am having trouble responding.', sender: 'bot' };
+      const botMessage = { 
+        id: Date.now() + 1, 
+        text: 'Sorry, I\'m having trouble connecting. Please check our Scholarships page for scholarship information, College Search for colleges, or Careers page for career guidance.', 
+        sender: 'bot',
+        isError: true
+      };
       setMessages(prev => [...prev, botMessage]);
     } finally {
       setLoading(false);
@@ -99,9 +123,18 @@ function Chatbot() {
                 <div className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${
                   message.sender === 'user'
                     ? 'bg-indigo-600 text-white rounded-br-none'
+                    : message.isError
+                    ? 'bg-red-50 text-red-800 border border-red-200 rounded-bl-none'
+                    : message.isFallback
+                    ? 'bg-yellow-50 text-yellow-900 border border-yellow-200 rounded-bl-none'
                     : 'bg-gray-100 text-gray-800 rounded-bl-none'
                 }`}>
-                  {message.text}
+                  {message.text.split('\n').map((line, i) => (
+                    <React.Fragment key={i}>
+                      {line}
+                      {i < message.text.split('\n').length - 1 && <br />}
+                    </React.Fragment>
+                  ))}
                 </div>
               </div>
             ))}

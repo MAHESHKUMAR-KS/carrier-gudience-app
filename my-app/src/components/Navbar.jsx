@@ -22,6 +22,7 @@ const Navbar = () => {
     { href: '/careers', label: 'Careers' },
     { href: '/college-search', label: 'College Search' },
     { href: '/exam-eligibility', label: 'Exam Eligibility' },
+    { href: '/scholarships', label: 'Scholarships' },
     { href: '/profile', label: 'My Profile' },
   ];
 

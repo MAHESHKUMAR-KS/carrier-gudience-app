@@ -12,6 +12,7 @@ import StudentProfile from './pages/StudentProfile';
 import ChatbotWidget from './components/Chatbot';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import Scholarships from './pages/Scholarships';
 
 // Main application layout component
 const AppLayout = () => {
@@ -57,6 +58,12 @@ const AppLayout = () => {
           <Route path="/profile" element={
             <ProtectedRoute>
               <StudentProfile />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/scholarships" element={
+            <ProtectedRoute>
+              <Scholarships />
             </ProtectedRoute>
           } />
           
