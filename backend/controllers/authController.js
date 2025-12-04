@@ -129,7 +129,7 @@ export const restrictTo = (...roles) => {
   };
 };
 
-// GOOGLE LOGIN
+
 export const googleLogin = async (req, res) => {
   try {
     const { credential } = req.body; // id_token from Google
