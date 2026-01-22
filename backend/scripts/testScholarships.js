@@ -1,6 +1,3 @@
-/**
- * Quick test script to insert fallback scholarship data into MongoDB
- */
 
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';

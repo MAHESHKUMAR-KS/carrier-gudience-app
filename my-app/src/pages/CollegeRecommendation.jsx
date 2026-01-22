@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Search, MapPin, ChevronDown, Star, ChevronRight, GraduationCap } from "lucide-react";
 
 export default function CollegeRecommendation() {
@@ -10,7 +10,6 @@ export default function CollegeRecommendation() {
 
   const [error, setError] = useState("");
   const [results, setResults] = useState([]);
-  const [sortedResults, setSortedResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [sortBy, setSortBy] = useState("relevance");
 
@@ -29,7 +28,7 @@ export default function CollegeRecommendation() {
     return null;
   };
 
-  
+  // Search colleges
   const handleSearch = async () => {
     const validationError = validateCutoff();
     if (validationError) {
@@ -40,7 +39,6 @@ export default function CollegeRecommendation() {
     setLoading(true);
     setError("");
     setResults([]);
-    setSortedResults([]);
 
     try {
       const API_BASE_URL = "http://localhost:5001";
@@ -74,7 +72,6 @@ export default function CollegeRecommendation() {
       }));
 
       setResults(formattedResults);
-      setSortedResults(formattedResults); // initialize sortedResults
     } catch (err) {
       console.error(err);
       setError("Failed to fetch colleges. Please try again later.");
@@ -82,27 +79,6 @@ export default function CollegeRecommendation() {
       setLoading(false);
     }
   };
-
-  
-  useEffect(() => {
-    if (!results.length) return;
-
-    let sorted = [...results];
-    switch (sortBy) {
-      case "rating":
-        sorted.sort((a, b) => b.rating - a.rating);
-        break;
-      case "cutoff":
-        sorted.sort((a, b) => b.cutoff - a.cutoff);
-        break;
-      case "fees":
-        sorted.sort((a, b) => a.fees - b.fees);
-        break;
-      default: 
-        sorted = [...results];
-    }
-    setSortedResults(sorted);
-  }, [sortBy, results]);
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
@@ -182,7 +158,9 @@ export default function CollegeRecommendation() {
                   />
                 </div>
               </div>
-              <p className="text-sm text-gray-600 mt-2">Cutoff = Maths + (Physics + Chemistry) / 2</p>
+              <p className="text-sm text-gray-600 mt-2">
+                Cutoff = Maths + (Physics + Chemistry) / 2
+              </p>
             </div>
 
             {/* Validation */}
@@ -204,7 +182,36 @@ export default function CollegeRecommendation() {
                   loading ? "opacity-70 cursor-not-allowed" : ""
                 }`}
               >
-                {loading ? "Searching..." : <><Search className="-ml-1 mr-2 h-5 w-5" />Search Colleges</>}
+                {loading ? (
+                  <>
+                    <svg
+                      className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    Searching...
+                  </>
+                ) : (
+                  <>
+                    <Search className="-ml-1 mr-2 h-5 w-5" />
+                    Search Colleges
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -218,12 +225,11 @@ export default function CollegeRecommendation() {
         )}
 
         {/* Results */}
-        {sortedResults.length > 0 ? (
+        {results.length > 0 ? (
           <div className="space-y-6">
-            {/* Sort Dropdown */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <h2 className="text-xl font-semibold text-gray-900">
-                {sortedResults.length} Predicted {sortedResults.length === 1 ? "College" : "Colleges"}
+                {results.length} Predicted {results.length === 1 ? "College" : "Colleges"}
               </h2>
               <div className="w-full sm:w-auto flex items-center">
                 <label htmlFor="sort" className="mr-2 text-sm font-medium text-gray-700 whitespace-nowrap">
@@ -248,10 +254,12 @@ export default function CollegeRecommendation() {
               </div>
             </div>
 
-            {/* College Cards */}
             <div className="grid gap-6 sm:grid-cols-1 lg:grid-cols-2">
-              {sortedResults.map((college) => (
-                <div key={college.id} className="bg-white overflow-hidden shadow-sm rounded-xl border border-gray-100 hover:shadow-md transition-shadow duration-200">
+              {results.map((college) => (
+                <div
+                  key={college.id}
+                  className="bg-white overflow-hidden shadow-sm rounded-xl border border-gray-100 hover:shadow-md transition-shadow duration-200"
+                >
                   <div className="p-6">
                     <div className="flex items-start justify-between">
                       <div className="pr-4">
@@ -266,6 +274,7 @@ export default function CollegeRecommendation() {
                         <span className="font-medium text-sm">{college.rating}</span>
                       </div>
                     </div>
+
                     <div className="mt-6 grid grid-cols-2 gap-6">
                       <div>
                         <p className="text-sm font-medium text-gray-500 mb-1">Cutoff ({college.course})</p>
@@ -273,8 +282,38 @@ export default function CollegeRecommendation() {
                       </div>
                       <div>
                         <p className="text-sm font-medium text-gray-500 mb-1">Fees (Annual)</p>
-                        <p className="text-lg font-semibold text-gray-900">₹{college.fees?.toLocaleString("en-IN") || "N/A"}</p>
+                        <p className="text-lg font-semibold text-gray-900">
+                          ₹{college.fees?.toLocaleString("en-IN") || "N/A"}
+                        </p>
                       </div>
+                    </div>
+
+                    {college.specializations?.length > 0 && (
+                      <div className="mt-6">
+                        <p className="text-sm font-medium text-gray-500 mb-2">Specializations</p>
+                        <div className="flex flex-wrap gap-2">
+                          {college.specializations.slice(0, 3).map((spec, i) => (
+                            <span
+                              key={i}
+                              className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700"
+                            >
+                              {spec}
+                            </span>
+                          ))}
+                          {college.specializations.length > 3 && (
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                              +{college.specializations.length - 3} more
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="mt-6 flex justify-end">
+                      <button className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
+                        View Details
+                        <ChevronRight className="ml-2 -mr-1 h-4 w-4" />
+                      </button>
                     </div>
                   </div>
                 </div>
